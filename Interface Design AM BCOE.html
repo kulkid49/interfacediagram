@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI‑SAP Invoice Exception Handling · Integration Architecture</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+        body {
+            background: #f5f7fb;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .document {
+            max-width: 1400px;
+            width: 100%;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            padding: 2rem 2.5rem;
+        }
+        h1 {
+            font-size: 2.3rem;
+            font-weight: 600;
+            background: linear-gradient(145deg, #1e2b4f, #2c3e6e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+        .subhead {
+            font-size: 1.1rem;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 1.2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        /* ----- image (text) display ----- */
+        .ascii-diagram {
+            background: #0d1b2a;        /* dark background like a terminal */
+            color: #b7e4fa;
+            border-radius: 24px;
+            padding: 2rem 1.8rem;
+            margin: 1.8rem 0 2.5rem 0;
+            border: 2px solid #2d4b6e;
+            box-shadow: 0 12px 24px rgba(0,20,40,0.5);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-x: auto;
+        }
+        .ascii-diagram pre {
+            margin: 0;
+            font-family: inherit;
+            color: #d4e6f5;
+            text-shadow: 0 0 4px #3d7bb3;
+        }
+        /* ----- old diagram container (if needed) */
+        .diagram-container {
+            background: #f8fafd;
+            border-radius: 28px;
+            padding: 2rem 1.5rem;
+            margin-bottom: 2.5rem;
+            border: 1px solid #cfddee;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .diagram-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e3a5f;
+        }
+        .diagram-title span {
+            background: #1e3a5f;
+            color: white;
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            margin-left: 12px;
+        }
+        /* ----- explanation cards (reused from previous) ----- */
+        .arch-card {
+            border-radius: 20px;
+            padding: 1.2rem 1.2rem 1.5rem 1.2rem;
+            border: 2px solid;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.04);
+            background: white;
+            transition: all 0.1s ease;
+            margin-bottom: 1rem;
+        }
+        .card-header {
+            font-weight: 700;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px dashed rgba(0,0,0,0.1);
+        }
+        .badge {
+            background: currentColor;
+            width: 16px;
+            height: 16px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .comp-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 16px;
+            margin-top: 8px;
+        }
+        .comp-item {
+            background: #f2f5f9;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #1f2a44;
+            border: 1px solid #dde3ed;
+            box-shadow: 0 1px 2px #00000008;
+        }
+        .comp-item strong {
+            font-weight: 700;
+            color: #0b1d3a;
+        }
+        .arrow-hint {
+            font-size: 0.8rem;
+            color: #4b587c;
+            margin: 10px 0 0 0;
+            background: #edf2f9;
+            padding: 8px 12px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .card-ai { border-color: #d6b656; background: #fffcf0; }
+        .card-ai .card-header { color: #8b6f2c; }
+        .card-integration { border-color: #6c8ebf; background: #f0f5ff; }
+        .card-integration .card-header { color: #2a4b7a; }
+        .card-sap { border-color: #9673a6; background: #f6f0fa; }
+        .card-sap .card-header { color: #5e3c72; }
+        .card-hitl { border-color: #d6b656; background: #fff7e0; }
+        .card-hitl .card-header { color: #8b6f2c; }
+        .card-datastore { border-color: #d6b656; background: #fff7e0; }
+        .card-datastore .card-header { color: #8b6f2c; }
+
+        .flow-step {
+            background: white;
+            border-left: 5px solid #2b4f8e;
+            padding: 1rem 1.5rem;
+            margin: 1.2rem 0;
+            border-radius: 0 24px 24px 0;
+            box-shadow: 0 4px 10px #eef2f6;
+        }
+        .flow-step h4 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: #153157;
+        }
+        .step-number {
+            background: #153157;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        .two-col {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+        .col {
+            flex: 1 1 300px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #f2f6fc;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 1.5rem 0;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #d0ddee;
+        }
+        th {
+            background: #1e2f50;
+            color: white;
+            font-weight: 500;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .footnote {
+            font-size: 0.9rem;
+            color: #2d3c5e;
+            background: #e9eefa;
+            padding: 1rem 1.5rem;
+            border-radius: 18px;
+            margin-top: 2rem;
+        }
+        hr {
+            border: 1px solid #e0e7f0;
+            margin: 2rem 0;
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+    <h1>Interface Design V1.0 (Flat Europe-Germany PoC)</h1>
+    <div class="subhead">
+
+    </div>
+
+    <!-- ========== SYSTEM LANDSCAPE HEADING ========== -->
+    <h2 style="font-size: 2rem; font-weight: 600; margin: 0 0 1rem 0;">🏞️ SYSTEM LANDSCAPE</h2>
+
+    <!-- ========== THE EXACT UPLOADED IMAGE (TEXT) ========== -->
+
+<div style="margin: 20px 0; text-align: center;">
+    <img src="Data Flow Agentic BCOE 2.png" alt="Data Flow Agentic BCOE 2" style="max-width:100%; border: 2px solid #1e3a5f; border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">
+    </div>
+
+    <!-- ========== COMPONENT EXPLANATION (cards) ========== -->
+    <h2 style="margin: 2rem 0 1rem 0; font-weight: 600; font-size: 1.8rem;">🔍 component deep dive</h2>
+    <div class="two-col">
+        <div class="col">
+            <h3>📦 AI application platform (Azure VM)</h3>
+            <ul style="line-height: 1.7; padding-left: 1.2rem;">
+                <li><strong>Orchestrator</strong> – agentic workflow manager; initiates context building, invokes SAP reads, routes to exception handlers, retries, and coordinates write-back.</li>
+                <li><strong>Flask API</strong> – central northbound interface; receives triggers from SAP, serves React dashboard, and calls internal components.</li>
+                <li><strong>LangChain / LangGraph</strong> – orchestrates reasoning, classification (exception type), and agentic decisions. Maintains state.</li>
+                <li><strong>Mistral OCR service</strong> – extracts structured JSON (headers, lines, PO references) from invoice PDF/image.</li>
+                <li><strong>Math / rules engine</strong> – deterministic price/quantity tolerance checks, UoM normalisation, bank prioritisation (no LLM for calculations).</li>
+            </ul>
+            <h3 style="margin-top: 2rem;">🗃️ AI data stores (audit only)</h3>
+            <ul style="line-height: 1.7; padding-left: 1.2rem;">
+                <li><strong>PostgreSQL</strong> – stores job snapshots, audit logs (before/after states), HITL queue, and metrics.</li>
+                <li><strong>Pinecone (vector DB)</strong> – holds embeddings of contexts for semantic similarity & future retraining.</li>
+            </ul>
+        </div>
+        <div class="col">
+            <h3>🔌 integration layer</h3>
+            <ul style="line-height: 1.7; padding-left: 1.2rem;">
+                <li><strong>SAP event / polling trigger</strong> – detects invoice exception in Process Director Cockpit; pushes (or polls) invoice number + exception code.</li>
+                <li><strong>SAP RFC / BAPI</strong> – all read/write operations via RFC or OData (read‑only for fetches; update restricted to specific fields like PO assignment).</li>
+            </ul>
+            <h3 style="margin-top: 2rem;">🏢 SAP S/4HANA (system of record)</h3>
+            <ul style="line-height: 1.7; padding-left: 1.2rem;">
+                <li><strong>Process Director Cockpit</strong> – manages invoice parking, exceptions, and workflows.</li>
+                <li><strong>Invoice management, PO, GRN, vendor master</strong> – data sources for context (invoice metadata, PO lines, GRN quantities, bank accounts).</li>
+            </ul>
+            <h3 style="margin-top: 2rem;">👥 human‑in‑the‑loop & monitoring</h3>
+            <ul style="line-height: 1.7; padding-left: 1.2rem;">
+                <li><strong>React dashboard</strong> – visualises HITL queue, KPIs, audit logs; allows AP user to review/edit AI decisions.</li>
+                <li><strong>AP user</strong> – approves or corrects low‑confidence cases; edits are written back via orchestrator.</li>
+            </ul>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- ========== DETAILED DATA FLOW ========== -->
+    <h2 style="font-size: 1.8rem;">🔄 step‑by‑step data flow</h2>
+    <p style="margin-bottom: 1.5rem; color: #2d3748;">based on integration document v1.0 (section 5). each step is numbered and mapped to the diagram.</p>
+
+    <div class="flow-step">
+        <h4><span class="step-number">1</span> Trigger & context build initiation</h4>
+        <p><strong>SAP → Integration → Orchestrator:</strong> an invoice in Process Director Cockpit enters exception (e.g. balance not zero). SAP event bus (or poll) sends <code>{event, documentNumber, exceptionCode, companyCode}</code> to the orchestrator webhook. Orchestrator creates a job record in PostgreSQL (status=INITIATED).</p>
+    </div>
+
+    <div class="flow-step">
+        <h4><span class="step-number">2</span> Data fetch from SAP (read operations)</h4>
+        <p><strong>Orchestrator → SAP RFC/BAPI:</strong> parallel or sequential RFC reads (read‑only). fetched data includes:</p>
+        <ul>
+            <li>Invoice metadata & status (simulation mode, error detection, 3‑way match hints).</li>
+            <li>Invoice image / OCR payload (if not already stored).</li>
+            <li>Purchase order details (PO items, prices, quantities).</li>
+            <li>Goods receipt (GRN) documents.</li>
+            <li>Vendor master & banking data (bank accounts, currencies).</li>
+        </ul>
+        <p>If invoice image is needed, it is forwarded to Mistral OCR (local service).</p>
+    </div>
+
+    <div class="flow-step">
+        <h4><span class="step-number">3</span> Context assembly</h4>
+        <p><strong>Flask API + LangGraph:</strong> all fetched data + OCR output are merged into a unified JSON context object. This snapshot is stored in PostgreSQL (transactional) and a vector embedding is upserted to Pinecone (via LangChain).</p>
+    </div>
+
+    <div class="flow-step">
+        <h4><span class="step-number">4</span> Exception classification</h4>
+        <p><strong>LangGraph agent:</strong> uses rule‑based logic + LLM scoring to classify the specific exception type (multi‑PO, price difference, partial GRN, multiple banks, or HITL). Output includes a confidence score (0‑1) and routed path.</p>
+    </div>
+
+    <div class="flow-step">
+        <h4><span class="step-number">5</span> Exception‑specific processing</h4>
+        <p><strong>AI internal (rules + ML):</strong> per exception, the engine performs specialised analysis:</p>
+        <ul>
+            <li><strong>Multi‑PO / balance not zero:</strong> NLP on OCR to identify all POs, validate via SAP, and prepare PATCH with corrected PO list.</li>
+            <li><strong>Price difference:</strong> compare invoice price vs PO price + tolerance; if exceeded, prepare to trigger MM_PD_B workflow.</li>
+            <li><strong>Partial GRN:</strong> fuzzy matching on quantities / dispatch note to select correct GRN; prepare removal of excess GRNs.</li>
+            <li><strong>Multiple banks:</strong> match invoice currency to vendor bank accounts, flag ambiguity.</li>
+        </ul>
+        <p>All resolution data is held in the context object.</p>
+    </div>
+
+    <div class="flow-step">
+        <h4><span class="step-number">6</span> Write‑back to SAP & workflow initiation</h4>
+        <p><strong>Orchestrator → SAP RFC (transactional):</strong> if confidence ≥ threshold (e.g. 0.8), AI sends corrections (e.g. PATCH to assign POs, update bank selection) or triggers a workflow (MM_PD_B). For updates, RFCs are used with job ID in headers for traceability. SAP remains system of record; AI never posts directly.</p>
+        <p>If confidence is low (or conflict), step 6b is invoked: HITL.</p>
+    </div>
+
+    <div class="flow-step">
+        <h4><span class="step-number">6b</span> Human‑in‑the‑loop</h4>
+        <p><strong>AI → React Dashboard → AP User:</strong> low‑confidence cases are inserted into HITL queue (PostgreSQL). Dashboard displays context; user approves/edits and submits. Approved payload is sent back to orchestrator, then written to SAP. Outcome is logged for retraining.</p>
+    </div>
+
+    <div class="flow-step">
+        <h4><span class="step-number">7</span> Audit, logging & monitoring</h4>
+        <p><strong>Every step → PostgreSQL + Dashboard:</strong> all API requests/responses, AI decisions, scores, and snapshots are stored in <code>audit_logs</code>. React dashboard shows real‑time KPIs (throughput, resolution time, exception rates). Logs are also pushed to Azure Monitor for alerting.</p>
+    </div>
+
+    <!-- BUSINESS EXCEPTION SCENARIOS TABLE -->
+    <h2 style="margin: 2.5rem 0 1rem;">📌 in‑scope exception scenarios</h2>
+    <table>
+        <thead><tr><th>exception</th><th>AI solution (summary)</th><th>data flow reference</th></tr></thead>
+        <tbody>
+            <tr><td><strong>Multiple bank accounts (VMD)</strong></td><td>extract currency/region rules; prioritise; validate against VMD; escalate if ambiguous</td><td>step 2 (vendor fetch), step 5.5.4, step 6</td></tr>
+            <tr><td><strong>Multiple PO numbers on invoice</strong></td><td>NLP PO detection; validate with SAP; select open/ relevant POs; PATCH to assign</td><td>step 2 (PO fetch), step 5.5.1, step 6</td></tr>
+            <tr><td><strong>Price difference beyond tolerance</strong></td><td>deterministic calculation (math engine); compare tolerance; trigger MM_PD_B workflow</td><td>step 2 (PO/GRN), step 5.5.2, step 6</td></tr>
+            <tr><td><strong>GRN exists but invoice not related to all GRNs</strong></td><td>fuzzy matching (item, qty, dispatch); UoM normalisation; correct GR selection</td><td>step 2 (GRN), step 5.5.3, step 6</td></tr>
+        </tbody>
+    </table>
+
+    <!-- KEY PRINCIPLES & COMPLIANCE -->
+    <div style="background: #eaf0fd; border-radius: 28px; padding: 1.5rem 2rem; margin-top: 2rem;">
+        <div style="display: flex; gap: 3rem; flex-wrap: wrap;">
+            <div><span style="font-weight:700;">🔐 security & compliance</span><br>OAuth 2.0 / client certs, TLS 1.3, SAP read‑only + field‑level write, GDPR/SOX audit trails, Azure disk encryption.</div>
+            <div><span style="font-weight:700;">⚙️ error handling</span><br>retry (3x exp. backoff), escalation to HITL, Azure Monitor alerts, SLA &lt;5 min response.</div>
+            <div><span style="font-weight:700;">🧾 auditability</span><br>every decision logged with timestamp, actor, before/after snapshots; stored 7 years.</div>
+        </div>
+    </div>
+
+    <div class="footnote">
+        ⚡ <strong>design principle:</strong> SAP remains system of record — AI acts as co‑processor, never posts directly. All postings are either auto‑posting after AI preparation or human‑approved workflows.
+    </div>
+
+    <!-- tiny footer -->
+    <div style="text-align: right; margin-top: 2rem; color: #5f6f8f; font-size: 0.85rem;">integration document v1.0 (09‑02‑2026) · AI‑SAP PoC · image "Data Flow Agentic BCOE 2.png" displayed above</div>
+</div>
+</body>
+</html>
