@@ -331,7 +331,7 @@
     </div>
 
     <div class="flow-step">
-        <h4><span class="step-number">6</span> Write‑back to SAP & workflow initiation</h4>
+        <h4><span class="step-number">6a</span> Write‑back to SAP & workflow initiation</h4>
         <p><strong>Orchestrator → SAP RFC (transactional):</strong> if confidence ≥ threshold (e.g. 0.8), AI sends corrections (e.g. PATCH to assign POs, update bank selection) or triggers a workflow (MM_PD_B). For updates, RFCs are used with job ID in headers for traceability. SAP remains system of record; AI never posts directly.</p>
         <p>If confidence is low (or conflict), step 6b is invoked: HITL.</p>
     </div>
