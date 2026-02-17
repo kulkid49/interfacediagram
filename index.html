@@ -296,6 +296,20 @@
             margin-bottom: 0.35rem;
             color: #153157;
         }
+        .panel-toolbar {
+            display: none;
+            justify-content: flex-end;
+            margin-bottom: 0.5rem;
+        }
+        .panel-close {
+            border: 1px solid #1e3a5f;
+            background: white;
+            color: #1e3a5f;
+            border-radius: 999px;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.82rem;
+            cursor: pointer;
+        }
         .diagram-instruction {
             font-size: 0.9rem;
             color: #4b587c;
@@ -312,6 +326,9 @@
             }
             .diagram-tooltip {
                 display: none !important;
+            }
+            .panel-toolbar {
+                display: flex;
             }
         }
     </style>
@@ -335,6 +352,7 @@
             <div class="diagram-tooltip" id="diagramTooltip"></div>
         </div>
         <div class="diagram-panel" id="diagramPanel" aria-live="polite">
+            <div class="panel-toolbar"><button id="clearSelection" class="panel-close" type="button">Clear selection</button></div>
             <h4>Interactive diagram details</h4>
             <p>Hover a component or arrow to view context. On mobile, tap a highlighted region.</p>
         </div>
@@ -464,107 +482,6 @@
     <div class="footnote">
         ⚡ <strong>design principle:</strong> SAP remains system of record — AI acts as co‑processor, never posts directly. All postings are either auto‑posting after AI preparation or human‑approved workflows.
     </div>
-<script>
-    const hotspotItems = [
-        { id: 'react-dashboard', kind: 'component', x: 18, y: 8, w: 17, h: 10, name: 'React Dashboard', description: 'Visualises HITL queue, KPIs, and audit logs; AP users can review and edit AI decisions before submission.' },
-        { id: 'ap-user', kind: 'component', x: 41, y: 8, w: 12, h: 10, name: 'AP User', description: 'Approves or corrects low-confidence cases, then sends approved payload back for SAP write-back.' },
-        { id: 'postgresql', kind: 'component', x: 58, y: 8, w: 14, h: 10, name: 'PostgreSQL', description: 'Stores job snapshots, audit logs, HITL queue, system metrics, and before/after decision traces.' },
-        { id: 'pinecone', kind: 'component', x: 76, y: 8, w: 16, h: 10, name: 'Vector DB / Pinecone', description: 'Holds semantic embeddings of context snapshots for similarity search and retraining support.' },
-
-        { id: 'orchestrator', kind: 'component', x: 14, y: 30, w: 16, h: 11, name: 'Orchestrator', description: 'Manages agentic workflows; initiates context building, invokes SAP reads, routes exceptions, retries, and coordinates write-back.' },
-        { id: 'mistral-ocr', kind: 'component', x: 33, y: 30, w: 14, h: 11, name: 'Mistral OCR Service', description: 'Extracts structured OCR JSON (headers, lines, PO references) from invoice PDF/image files.' },
-        { id: 'flask-api', kind: 'component', x: 50, y: 30, w: 13, h: 11, name: 'Flask API', description: 'Northbound API surface that receives SAP triggers, serves dashboard data, and coordinates internal services.' },
-        { id: 'langgraph', kind: 'component', x: 65, y: 30, w: 16, h: 11, name: 'LangChain / LangGraph', description: 'Performs exception classification and agentic reasoning with maintained workflow state and confidence scoring.' },
-        { id: 'rules-engine', kind: 'component', x: 83, y: 30, w: 14, h: 11, name: 'Math / Rules Engine', description: 'Runs deterministic tolerance checks, UoM normalization, and bank prioritisation logic for compliant outcomes.' },
-
-        { id: 'sap-trigger', kind: 'component', x: 15, y: 56, w: 22, h: 11, name: 'SAP Event / Polling Trigger', description: 'Detects exceptions in Process Director Cockpit and pushes invoice number + exception code into the integration flow.' },
-        { id: 'sap-rfc', kind: 'component', x: 42, y: 56, w: 18, h: 11, name: 'SAP RFC / BAPI', description: 'Executes RFC/OData read and restricted write operations for metadata retrieval and transactional updates.' },
-
-        { id: 'pd-cockpit', kind: 'component', x: 13, y: 74, w: 18, h: 12, name: 'Process Director Cockpit', description: 'Primary invoice exception cockpit where parked invoices and workflow statuses are managed.' },
-        { id: 'invoice-management', kind: 'component', x: 35, y: 74, w: 15, h: 12, name: 'Invoice Management', description: 'Provides invoice metadata, status, and linked document context used for exception resolution.' },
-        { id: 'purchase-orders', kind: 'component', x: 53, y: 74, w: 12, h: 12, name: 'Purchase Orders', description: 'Source of PO line details, quantities, prices, and matching attributes for 2-way/3-way comparisons.' },
-        { id: 'goods-receipt', kind: 'component', x: 68, y: 74, w: 12, h: 12, name: 'Goods Receipt', description: 'Supplies GRN receipts and quantity movement details for partial GRN and mismatch checks.' },
-        { id: 'vendor-master', kind: 'component', x: 83, y: 74, w: 14, h: 12, name: 'Vendor Master Data', description: 'Provides bank account and currency records used for multiple-bank disambiguation logic.' },
-
-        { id: 'flow-invoice-enters', kind: 'flow', x: 19, y: 67, w: 8, h: 4, label: 'Invoice Enters Exception', from: 'Process Director Cockpit', to: 'SAP Event / Polling Trigger', step: 'Step 1: Trigger & Context Build Initiation', data: 'Exception event metadata', description: 'When an invoice enters exception, the cockpit emits (or exposes for polling) the event that starts AI processing.' },
-        { id: 'flow-invoice-no', kind: 'flow', x: 30, y: 56, w: 12, h: 4, label: 'Invoice No + Exception Code', from: 'SAP Event / Polling Trigger', to: 'Orchestrator webhook', step: 'Step 1', data: '{event, documentNumber, exceptionCode, companyCode}', description: 'SAP sends invoice-identifying event data to the orchestrator, which creates an initiated job record.' },
-        { id: 'flow-fetch-meta', kind: 'flow', x: 37, y: 50, w: 11, h: 4, label: 'Fetch Invoice Metadata', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 2: Data fetch', data: 'Invoice metadata JSON, status, simulation hints', description: 'Orchestrator invokes read-only RFC/OData calls to gather invoice metadata and related context.' },
-        { id: 'flow-fetch-po-grn-vendor', kind: 'flow', x: 50, y: 65, w: 22, h: 4, label: 'Fetch PO / GRN / Vendor', from: 'SAP RFC / BAPI', to: 'PO + GRN + Vendor sources', step: 'Step 2', data: 'PO lines, GRN docs, vendor & bank records', description: 'The integration layer collects purchase, receipt, and vendor facts to build a complete resolution context.' },
-        { id: 'flow-invoice-image', kind: 'flow', x: 32, y: 43, w: 10, h: 4, label: 'Invoice PDF/Image', from: 'SAP fetch context', to: 'Mistral OCR Service', step: 'Step 2', data: 'Binary PDF/image', description: 'If OCR output is missing, invoice images are passed to the OCR service for document extraction.' },
-        { id: 'flow-ocr-json', kind: 'flow', x: 43, y: 34, w: 8, h: 4, label: 'Structured OCR JSON', from: 'Mistral OCR Service', to: 'Flask API / context builder', step: 'Step 3: Context assembly', data: 'Structured header + line-item JSON', description: 'OCR output is normalized and merged with SAP context into a single transactional JSON snapshot.' },
-        { id: 'flow-embeddings', kind: 'flow', x: 70, y: 21, w: 13, h: 4, label: 'Embeddings', from: 'LangChain / LangGraph', to: 'Vector DB / Pinecone', step: 'Step 3', data: 'Vector embeddings', description: 'Semantic vectors of each context snapshot are upserted for similarity retrieval and retraining support.' },
-        { id: 'flow-logs-decisions', kind: 'flow', x: 55, y: 21, w: 13, h: 4, label: 'Logs & Decisions', from: 'Orchestrator and agents', to: 'PostgreSQL', step: 'Step 7: Audit logging', data: 'Audit logs, confidence scores, before/after snapshots', description: 'All decisions, API calls, and outcomes are persisted for traceability, KPI views, and compliance.' },
-        { id: 'flow-confidence', kind: 'flow', x: 76, y: 44, w: 12, h: 4, label: 'Confidence ≥ Threshold', from: 'LangChain / LangGraph', to: 'Math / Rules Engine and SAP write path', step: 'Steps 4-6', data: 'Confidence score + route', description: 'High-confidence classifications continue to deterministic checks and automated correction/write-back preparation.' },
-        { id: 'flow-patch-update', kind: 'flow', x: 58, y: 49, w: 10, h: 4, label: 'PATCH / Update Fields', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 6', data: 'Field-level update payloads', description: 'For eligible cases, orchestrator sends restricted field updates (e.g., PO assignment, bank selection) through RFCs.' },
-        { id: 'flow-approved-payload', kind: 'flow', x: 30, y: 20, w: 12, h: 4, label: 'Approved Payload', from: 'AP User via React Dashboard', to: 'Orchestrator', step: 'Step 6b: HITL', data: 'Human-reviewed correction payload', description: 'Low-confidence or conflicting cases are reviewed by AP users, and approved edits are returned for SAP write-back.' },
-        { id: 'flow-transactional-update', kind: 'flow', x: 46, y: 56, w: 10, h: 4, label: 'Transactional Update', from: 'SAP RFC / BAPI', to: 'SAP S/4HANA records', step: 'Step 6', data: 'Committed correction transaction', description: 'Validated update requests are committed in SAP, preserving SAP as system of record.' }
-    ];
-
-    const layer = document.getElementById('hotspotLayer');
-    const tooltip = document.getElementById('diagramTooltip');
-    const panel = document.getElementById('diagramPanel');
-
-    function panelHtml(item) {
-        if (item.kind === 'component') {
-            return `<h4>${item.name}</h4><p>${item.description}</p>`;
-        }
-        return `<h4>${item.label}</h4><p><strong>From:</strong> ${item.from} <strong>→ To:</strong> ${item.to}</p><p><strong>${item.step}</strong> · <strong>Data:</strong> ${item.data}</p><p>${item.description}</p>`;
-    }
-
-    function tooltipHtml(item) {
-        if (item.kind === 'component') {
-            return `<strong>${item.name}</strong><br>${item.description}`;
-        }
-        return `<strong>${item.label}</strong><br>${item.from} → ${item.to}<br>${item.step}<br>${item.data}`;
-    }
-
-    function placeTooltip(event) {
-        const x = event.clientX + 14;
-        const y = event.clientY + 14;
-        tooltip.style.left = `${x}px`;
-        tooltip.style.top = `${y}px`;
-    }
-
-    hotspotItems.forEach((item) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'hotspot';
-        btn.dataset.kind = item.kind;
-        btn.style.left = `${item.x}%`;
-        btn.style.top = `${item.y}%`;
-        btn.style.width = `${item.w}%`;
-        btn.style.height = `${item.h}%`;
-        btn.setAttribute('aria-label', item.kind === 'component' ? item.name : item.label);
-
-        btn.addEventListener('mouseenter', (event) => {
-            panel.innerHTML = panelHtml(item);
-            tooltip.innerHTML = tooltipHtml(item);
-            tooltip.style.display = 'block';
-            placeTooltip(event);
-            btn.classList.add('active');
-        });
-
-        btn.addEventListener('mousemove', placeTooltip);
-
-        btn.addEventListener('mouseleave', () => {
-            tooltip.style.display = 'none';
-            btn.classList.remove('active');
-        });
-
-        btn.addEventListener('focus', () => {
-            panel.innerHTML = panelHtml(item);
-            btn.classList.add('active');
-        });
-
-        btn.addEventListener('blur', () => {
-            btn.classList.remove('active');
-        });
-
-        btn.addEventListener('click', () => {
-            panel.innerHTML = panelHtml(item);
-            btn.classList.toggle('active');
-        });
-
     <!-- tiny footer -->
     <div style="text-align: right; margin-top: 2rem; color: #5f6f8f; font-size: 0.85rem;">integration document v1.0 (09‑02‑2026) · AI‑SAP PoC · image "Data Flow Agentic BCOE 2.png" displayed above</div>
 </div>
@@ -607,6 +524,8 @@
     const layer = document.getElementById('hotspotLayer');
     const tooltip = document.getElementById('diagramTooltip');
     const panel = document.getElementById('diagramPanel');
+    const interactiveDiagram = document.getElementById('interactiveDiagram');
+    const defaultPanelHtml = '<div class="panel-toolbar"><button id="clearSelection" class="panel-close" type="button">Clear selection</button></div><h4>Interactive diagram details</h4><p>Hover a component or arrow to view context. On mobile, tap a highlighted region.</p>';
 
     function panelHtml(item) {
         if (item.kind === 'component') {
@@ -640,6 +559,18 @@
         if (event) {
             tooltip.style.display = 'block';
             placeTooltip(event);
+        }
+    }
+
+    function resetPanel() {
+        panel.innerHTML = defaultPanelHtml;
+        const renewedClearBtn = document.getElementById('clearSelection');
+        if (renewedClearBtn) {
+            renewedClearBtn.onclick = () => {
+                tooltip.style.display = 'none';
+                document.querySelectorAll('.hotspot.active').forEach((el) => el.classList.remove('active'));
+                resetPanel();
+            };
         }
     }
 
@@ -687,12 +618,31 @@
         });
 
         shape.addEventListener('click', (event) => {
+            document.querySelectorAll('.hotspot.active').forEach((el) => {
+                if (el !== shape) {
+                    el.classList.remove('active');
+                }
+            });
             updateDetails(item, event);
-            shape.classList.toggle('active');
+            shape.classList.add('active');
         });
 
         layer.appendChild(shape);
     });
+
+    interactiveDiagram.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            tooltip.style.display = 'none';
+            document.querySelectorAll('.hotspot.active').forEach((el) => el.classList.remove('active'));
+            resetPanel();
+        }
+    });
+
+    resetPanel();
 </script>
 </body>
 </html>
