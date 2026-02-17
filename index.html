@@ -153,6 +153,35 @@
         .side-panel.active {
             left: 20px;              /* slide in */
         }
+        .side-panel.dragging {
+            transition: none;
+            user-select: none;
+        }
+        .side-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.7rem;
+            cursor: grab;
+            touch-action: none;
+            margin-bottom: 1.2rem;
+            padding-right: 40px;
+        }
+        .side-panel-header:active {
+            cursor: grabbing;
+        }
+        .side-panel-header h2 {
+            margin-bottom: 0;
+        }
+        .drag-hint {
+            font-size: 0.78rem;
+            color: #4b587c;
+            background: #edf2f9;
+            border: 1px solid #d5deed;
+            border-radius: 999px;
+            padding: 0.2rem 0.5rem;
+            white-space: nowrap;
+        }
         .side-panel h2 {
             font-size: 1.5rem;
             font-weight: 600;
@@ -160,7 +189,7 @@
             margin-right: 30px;
             border-bottom: 2px solid #e0e7f0;
             padding-bottom: 0.6rem;
-            margin-bottom: 1.2rem;
+            margin-bottom: 0;
         }
         .side-panel .close-btn {
             position: absolute;
@@ -226,6 +255,9 @@
             }
             .side-panel.active {
                 left: 5vw;
+            }
+            .drag-hint {
+                display: none;
             }
         }
 
@@ -356,7 +388,10 @@
 <!-- ========== FLOATING STEP CARD (top‑left) ========== -->
 <div id="sidePanel" class="side-panel">
     <button class="close-btn" id="closeSidePanel">&times;</button>
-    <h2>📋 <span id="stepContextLabel">step</span></h2>
+    <div class="side-panel-header" id="sidePanelHeader">
+        <h2>📋 <span id="stepContextLabel">step</span></h2>
+        <span class="drag-hint">Drag me</span>
+    </div>
     <ol id="dynamicStepList"></ol>
 </div>
 
@@ -560,8 +595,64 @@
 
         // ----- update floating card (top‑left) -----
         const sidePanel = document.getElementById('sidePanel');
+        const sidePanelHeader = document.getElementById('sidePanelHeader');
         const dynamicList = document.getElementById('dynamicStepList');
         const stepContextLabel = document.getElementById('stepContextLabel');
+
+        let isDraggingPanel = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        function clampPanelPosition(left, top) {
+            const maxLeft = Math.max(window.innerWidth - sidePanel.offsetWidth, 0);
+            const maxTop = Math.max(window.innerHeight - sidePanel.offsetHeight, 0);
+            return {
+                left: Math.min(Math.max(left, 0), maxLeft),
+                top: Math.min(Math.max(top, 0), maxTop)
+            };
+        }
+
+        function applyPanelPosition(left, top) {
+            const clamped = clampPanelPosition(left, top);
+            sidePanel.style.left = `${clamped.left}px`;
+            sidePanel.style.top = `${clamped.top}px`;
+        }
+
+        function beginPanelDrag(event) {
+            if (!sidePanel.classList.contains('active')) return;
+            const rect = sidePanel.getBoundingClientRect();
+            isDraggingPanel = true;
+            dragOffsetX = event.clientX - rect.left;
+            dragOffsetY = event.clientY - rect.top;
+            sidePanel.classList.add('dragging');
+            sidePanelHeader.setPointerCapture(event.pointerId);
+        }
+
+        function onPanelDrag(event) {
+            if (!isDraggingPanel) return;
+            event.preventDefault();
+            applyPanelPosition(event.clientX - dragOffsetX, event.clientY - dragOffsetY);
+        }
+
+        function endPanelDrag(event) {
+            if (!isDraggingPanel) return;
+            isDraggingPanel = false;
+            sidePanel.classList.remove('dragging');
+            if (sidePanelHeader.hasPointerCapture(event.pointerId)) {
+                sidePanelHeader.releasePointerCapture(event.pointerId);
+            }
+        }
+
+        sidePanelHeader.addEventListener('pointerdown', beginPanelDrag);
+        sidePanelHeader.addEventListener('pointermove', onPanelDrag);
+        sidePanelHeader.addEventListener('pointerup', endPanelDrag);
+        sidePanelHeader.addEventListener('pointercancel', endPanelDrag);
+
+        window.addEventListener('resize', () => {
+            if (!sidePanel.classList.contains('active')) return;
+            const rect = sidePanel.getBoundingClientRect();
+            applyPanelPosition(rect.left, rect.top);
+        });
 
         function updateSidePanel(item, seqIndex) {
             const indices = getStepIndicesForItem(item, seqIndex);
