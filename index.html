@@ -481,6 +481,13 @@
             }
         });
 
+        // Explicit component-to-step mappings for endpoints that do not have direct flow hotspots.
+        const componentToPrimaryStep = {
+            'purchase-orders': 16, // Step 17
+            'goods-receipt': 17,   // Step 18
+            'vendor-master': 18    // Step 19
+        };
+
         // ----- helper: get step indices for clicked element at given sequence index -----
         function getStepIndicesForItem(item, seqIndex) {
             if (item.kind === 'flow') {
@@ -488,6 +495,11 @@
                 return stepIdx !== undefined ? [stepIdx] : [];
             } else {
                 const compId = item.id;
+
+                if (componentToPrimaryStep.hasOwnProperty(compId)) {
+                    return [componentToPrimaryStep[compId]];
+                }
+
                 const stepsSet = new Set();
 
                 // scan backwards for consecutive flows that have this component as destination
