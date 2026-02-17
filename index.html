@@ -1,822 +1,353 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI‑SAP Invoice Exception Handling · Integration Architecture</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
-        }
-        body {
-            background: #f5f7fb;
-            padding: 2rem 1.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .document {
-            max-width: 1400px;
-            width: 100%;
-            background: white;
-            border-radius: 32px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            padding: 2rem 2.5rem;
-        }
-        h1 {
-            font-size: 2.3rem;
-            font-weight: 600;
-            background: linear-gradient(145deg, #1e2b4f, #2c3e6e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.25rem;
-        }
-        .subhead {
-            font-size: 1.1rem;
-            color: #4a5568;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 1.2rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-        /* ----- image (text) display ----- */
-        .ascii-diagram {
-            background: #0d1b2a;        /* dark background like a terminal */
-            color: #b7e4fa;
-            border-radius: 24px;
-            padding: 2rem 1.8rem;
-            margin: 1.8rem 0 2.5rem 0;
-            border: 2px solid #2d4b6e;
-            box-shadow: 0 12px 24px rgba(0,20,40,0.5);
-            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-x: auto;
-        }
-        .ascii-diagram pre {
-            margin: 0;
-            font-family: inherit;
-            color: #d4e6f5;
-            text-shadow: 0 0 4px #3d7bb3;
-        }
-        /* ----- old diagram container (if needed) */
-        .diagram-container {
-            background: #f8fafd;
-            border-radius: 28px;
-            padding: 2rem 1.5rem;
-            margin-bottom: 2.5rem;
-            border: 1px solid #cfddee;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-        }
-        .diagram-title {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #1e3a5f;
-        }
-        .diagram-title span {
-            background: #1e3a5f;
-            color: white;
-            font-size: 0.9rem;
-            padding: 4px 12px;
-            border-radius: 40px;
-            margin-left: 12px;
-        }
-        /* ----- explanation cards (reused from previous) ----- */
-        .arch-card {
-            border-radius: 20px;
-            padding: 1.2rem 1.2rem 1.5rem 1.2rem;
-            border: 2px solid;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.04);
-            background: white;
-            transition: all 0.1s ease;
-            margin-bottom: 1rem;
-        }
-        .card-header {
-            font-weight: 700;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px dashed rgba(0,0,0,0.1);
-        }
-        .badge {
-            background: currentColor;
-            width: 16px;
-            height: 16px;
-            border-radius: 6px;
-            display: inline-block;
-        }
-        .comp-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px 16px;
-            margin-top: 8px;
-        }
-        .comp-item {
-            background: #f2f5f9;
-            padding: 6px 16px;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #1f2a44;
-            border: 1px solid #dde3ed;
-            box-shadow: 0 1px 2px #00000008;
-        }
-        .comp-item strong {
-            font-weight: 700;
-            color: #0b1d3a;
-        }
-        .arrow-hint {
-            font-size: 0.8rem;
-            color: #4b587c;
-            margin: 10px 0 0 0;
-            background: #edf2f9;
-            padding: 8px 12px;
-            border-radius: 30px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .card-ai { border-color: #d6b656; background: #fffcf0; }
-        .card-ai .card-header { color: #8b6f2c; }
-        .card-integration { border-color: #6c8ebf; background: #f0f5ff; }
-        .card-integration .card-header { color: #2a4b7a; }
-        .card-sap { border-color: #9673a6; background: #f6f0fa; }
-        .card-sap .card-header { color: #5e3c72; }
-        .card-hitl { border-color: #d6b656; background: #fff7e0; }
-        .card-hitl .card-header { color: #8b6f2c; }
-        .card-datastore { border-color: #d6b656; background: #fff7e0; }
-        .card-datastore .card-header { color: #8b6f2c; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-SAP Invoice Exception Handling · Integration Architecture</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, system-ui, sans-serif;
+      background: #f5f7fb;
+      color: #16253f;
+      padding: 1.2rem;
+    }
+    .document {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 18px 36px rgba(0,0,0,0.09);
+      padding: 1.4rem;
+    }
+    h1 { margin: 0 0 0.5rem; }
+    h2 { margin-top: 1.8rem; }
+    .interactive-diagram-wrap { margin: 1rem 0 1.2rem; }
+    .interactive-diagram {
+      position: relative;
+      border: 1px solid #c5d2e2;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #f8fbff;
+    }
+    .interactive-diagram svg { width: 100%; height: auto; display: block; }
 
-        .flow-step {
-            background: white;
-            border-left: 5px solid #2b4f8e;
-            padding: 1rem 1.5rem;
-            margin: 1.2rem 0;
-            border-radius: 0 24px 24px 0;
-            box-shadow: 0 4px 10px #eef2f6;
-        }
-        .flow-step h4 {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-            color: #153157;
-        }
-        .step-number {
-            background: #153157;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 30px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-        }
-        .two-col {
-            display: flex;
-            gap: 2rem;
-            flex-wrap: wrap;
-            margin-top: 2rem;
-        }
-        .col {
-            flex: 1 1 300px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #f2f6fc;
-            border-radius: 20px;
-            overflow: hidden;
-            margin: 1.5rem 0;
-        }
-        th, td {
-            padding: 14px 16px;
-            text-align: left;
-            border-bottom: 1px solid #d0ddee;
-        }
-        th {
-            background: #1e2f50;
-            color: white;
-            font-weight: 500;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
-        .footnote {
-            font-size: 0.9rem;
-            color: #2d3c5e;
-            background: #e9eefa;
-            padding: 1rem 1.5rem;
-            border-radius: 18px;
-            margin-top: 2rem;
-        }
-        hr {
-            border: 1px solid #e0e7f0;
-            margin: 2rem 0;
-        }
-        .interactive-diagram-wrap {
-            margin: 20px 0;
-        }
-        .interactive-diagram {
-            position: relative;
-            width: 100%;
-            border: 2px solid #1e3a5f;
-            border-radius: 16px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            overflow: hidden;
-            background: #fff;
-        }
-        .interactive-diagram img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        .hotspot-layer {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        .hotspot {
-            cursor: pointer;
-            pointer-events: auto;
-            fill: rgba(30, 58, 95, 0);
-            stroke: rgba(30, 58, 95, 0);
-            stroke-width: 4;
-            vector-effect: non-scaling-stroke;
-            transition: fill 0.15s ease, stroke 0.15s ease;
-            touch-action: manipulation;
-        }
-        .hotspot:hover,
-        .hotspot:focus-visible,
-        .hotspot.active {
-            fill: rgba(30, 58, 95, 0.14);
-            stroke: rgba(30, 58, 95, 0.75);
-            outline: none;
-        }
-        .diagram-tooltip {
-            position: absolute;
-            pointer-events: none;
-            display: none;
-            width: min(320px, 90vw);
-            background: #fff;
-            border: 1px solid #111;
-            border-radius: 10px;
-            box-shadow: 0 10px 22px rgba(0,0,0,0.15);
-            padding: 10px;
-            z-index: 20;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-        .diagram-panel {
-            margin-top: 0.9rem;
-            background: #f8fbff;
-            border: 1px solid #cfddee;
-            border-radius: 14px;
-            padding: 0.8rem 0.9rem;
-            color: #1f2a44;
-        }
-        .diagram-panel h4 {
-            margin-bottom: 0.35rem;
-            color: #153157;
-        }
+    .component-shape {
+      stroke: #415c85;
+      stroke-width: 2;
+      fill: #eaf2ff;
+      cursor: pointer;
+      transition: fill 0.2s, stroke-width 0.2s, filter 0.2s;
+    }
+    .component-shape:hover,
+    .component-shape.active {
+      fill: #d3e5ff;
+      stroke-width: 3;
+      filter: drop-shadow(0 0 5px rgba(37, 102, 190, 0.55));
+    }
 
-        .panel-toolbar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.45rem;
-            margin-bottom: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .panel-close:hover,
-        .panel-close:focus-visible {
-            background: #1e3a5f;
-            color: #fff;
-            outline: none;
-        }
-        .hotspot.in-sequence {
-            stroke-dasharray: 6 4;
-        }
-        .hotspot.sequence-current {
-            fill: rgba(11, 89, 176, 0.22);
-            stroke: #0b59b0;
-            stroke-width: 6;
-            filter: drop-shadow(0 0 5px rgba(11, 89, 176, 0.8));
-        }
-        .hotspot.sequence-next {
-            fill: rgba(20, 150, 50, 0.15);
-            stroke: #149632;
-            stroke-width: 5;
-            animation: pulse-next 1.2s infinite;
-        }
-        .hotspot.flow {
-            stroke: rgba(145, 30, 30, 0.2);
-        }
-        .hotspot.flow:hover,
-        .hotspot.flow:focus-visible,
-        .hotspot.flow.active {
-            stroke: #dd1f2b;
-            stroke-width: 6;
-            fill: rgba(221, 31, 43, 0.12);
-        }
-        .arrow-path {
-            fill: none;
-            stroke: rgba(30, 58, 95, 0.35);
-            stroke-width: 5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            vector-effect: non-scaling-stroke;
-            pointer-events: none;
-            transition: stroke 0.2s ease, stroke-width 0.2s ease;
-        }
-        .arrow-path.arrow-hover {
-            stroke: #dd1f2b;
-            stroke-width: 7;
-            stroke-dasharray: 10 8;
-            animation: arrow-dash 0.7s linear infinite;
-        }
-        @keyframes arrow-dash {
-            to { stroke-dashoffset: -18; }
-        }
-        @keyframes pulse-next {
-            0%,100% { filter: drop-shadow(0 0 2px rgba(20,150,50,0.6)); }
-            50% { filter: drop-shadow(0 0 9px rgba(20,150,50,0.95)); }
-        }
-        .panel-close {
-            border: 1px solid #1e3a5f;
-            background: white;
-            color: #1e3a5f;
-            border-radius: 999px;
-            padding: 0.2rem 0.7rem;
-            font-size: 0.82rem;
-            cursor: pointer;
-        }
-        .diagram-instruction {
-            font-size: 0.9rem;
-            color: #4b587c;
-            margin-top: 0.45rem;
-        }
+    .arrow {
+      stroke: #3a5578;
+      stroke-width: 3;
+      fill: none;
+      cursor: pointer;
+      transition: stroke 0.15s, stroke-width 0.15s, filter 0.15s;
+      marker-end: url(#arrowhead);
+      pointer-events: stroke;
+    }
+    .arrow:hover,
+    .arrow.active {
+      stroke: #e12b39;
+      stroke-width: 5;
+      filter: drop-shadow(0 0 6px rgba(225, 43, 57, 0.6));
+    }
+    .node-label { font-size: 16px; font-weight: 600; fill: #142238; pointer-events: none; }
 
-        @media (max-width: 768px) {
-            .document {
-                padding: 1.4rem 1rem;
-                border-radius: 20px;
-            }
-            h1 {
-                font-size: 1.7rem;
-            }
-            .diagram-tooltip {
-                display: none !important;
-            }
-        }
-    </style>
+    .diagram-tooltip {
+      position: absolute;
+      display: none;
+      pointer-events: none;
+      background: #fff;
+      border: 1px solid #000;
+      border-radius: 10px;
+      padding: 10px;
+      max-width: 300px;
+      z-index: 1000;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.15);
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .diagram-panel {
+      margin-top: 0.8rem;
+      border: 1px solid #c5d2e2;
+      border-radius: 12px;
+      padding: 0.8rem;
+      background: #f5f9ff;
+    }
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    button {
+      border: 1px solid #29486f;
+      border-radius: 999px;
+      background: #fff;
+      color: #29486f;
+      padding: 0.25rem 0.75rem;
+      cursor: pointer;
+    }
+    .flow-step {
+      background: #fff;
+      border-left: 4px solid #2e4f8a;
+      border-radius: 0 12px 12px 0;
+      padding: 0.7rem 0.9rem;
+      margin: 0.7rem 0;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    th, td { border: 1px solid #d8e2ef; padding: 0.55rem; text-align: left; }
+    th { background: #1f3658; color: #fff; }
+    @media (max-width: 768px) {
+      body { padding: 0.5rem; }
+      .document { padding: 0.9rem; }
+    }
+  </style>
 </head>
 <body>
-<div class="document">
+  <div class="document">
     <h1>Interface Design V1.0 (Flat Europe-Germany PoC)</h1>
-    <div class="subhead">
+    <p>Interactive SVG version of the AI-SAP Invoice Exception Handling Integration Architecture.</p>
 
-    </div>
-
-    <!-- ========== SYSTEM LANDSCAPE HEADING ========== -->
-    <h2 style="font-size: 2rem; font-weight: 600; margin: 0 0 1rem 0;">🏞️ SYSTEM LANDSCAPE</h2>
-
-    <!-- ========== THE EXACT UPLOADED IMAGE (TEXT) ========== -->
-
+    <h2>🏞️ System Landscape</h2>
     <div class="interactive-diagram-wrap">
-        <div class="interactive-diagram" id="interactiveDiagram" aria-label="Interactive architecture diagram">
-            <img src="Data Flow Agentic BCOE 2.png" alt="AI-SAP Invoice Exception Handling integration architecture diagram">
-            <svg class="hotspot-layer" id="hotspotLayer" viewBox="0 0 2088 1755" preserveAspectRatio="none" aria-hidden="true"></svg>
-            <div class="diagram-tooltip" id="diagramTooltip" role="tooltip" aria-hidden="true"></div>
+      <div class="interactive-diagram" id="interactiveDiagram">
+        <svg id="architectureSvg" viewBox="0 0 1400 860" role="img" aria-label="AI-SAP invoice architecture">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L10,4 L0,8 Z" fill="currentColor"></path>
+            </marker>
+          </defs>
+
+          <!-- Components -->
+          <g id="sap-trigger" data-kind="component" tabindex="0"><rect class="component-shape" x="30" y="350" width="210" height="85" rx="10"></rect><text class="node-label" x="48" y="398">SAP Event / Polling</text></g>
+          <g id="orchestrator" data-kind="component" tabindex="0"><rect class="component-shape" x="310" y="350" width="210" height="85" rx="10"></rect><text class="node-label" x="334" y="398">Orchestrator</text></g>
+          <g id="sap-rfc-bapi" data-kind="component" tabindex="0"><rect class="component-shape" x="590" y="350" width="210" height="85" rx="10"></rect><text class="node-label" x="628" y="398">SAP RFC / BAPI</text></g>
+          <g id="mistral-ocr-service" data-kind="component" tabindex="0"><rect class="component-shape" x="590" y="220" width="210" height="85" rx="10"></rect><text class="node-label" x="629" y="268">Mistral OCR</text></g>
+          <g id="flask-api" data-kind="component" tabindex="0"><rect class="component-shape" x="870" y="220" width="210" height="85" rx="10"></rect><text class="node-label" x="925" y="268">Flask API</text></g>
+          <g id="langchain-engine" data-kind="component" tabindex="0"><rect class="component-shape" x="870" y="350" width="210" height="85" rx="10"></rect><text class="node-label" x="900" y="398">LangChain / Graph</text></g>
+          <g id="rules-engine" data-kind="component" tabindex="0"><rect class="component-shape" x="1140" y="350" width="220" height="85" rx="10"></rect><text class="node-label" x="1177" y="398">Math / Rules Engine</text></g>
+          <g id="react-dashboard" data-kind="component" tabindex="0"><rect class="component-shape" x="1140" y="510" width="220" height="85" rx="10"></rect><text class="node-label" x="1174" y="558">React Dashboard</text></g>
+          <g id="ap-user" data-kind="component" tabindex="0"><rect class="component-shape" x="1140" y="660" width="220" height="85" rx="10"></rect><text class="node-label" x="1210" y="708">AP User</text></g>
+          <g id="vector-db" data-kind="component" tabindex="0"><rect class="component-shape" x="870" y="510" width="210" height="85" rx="10"></rect><text class="node-label" x="929" y="558">Vector DB</text></g>
+          <g id="logs" data-kind="component" tabindex="0"><rect class="component-shape" x="590" y="510" width="210" height="85" rx="10"></rect><text class="node-label" x="621" y="558">Logs & Decisions</text></g>
+          <g id="sap-s4hana" data-kind="component" tabindex="0"><rect class="component-shape" x="310" y="510" width="210" height="85" rx="10"></rect><text class="node-label" x="344" y="558">SAP S/4HANA</text></g>
+
+          <!-- Arrows (precise curved/bent paths) -->
+          <path id="arrow-sap-event-to-orchestrator" class="arrow" d="M240 392 C270 392, 290 392, 310 392" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-orchestrator-to-sap-rfc" class="arrow" d="M520 392 C545 392, 565 392, 590 392" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-sap-to-orchestrator" class="arrow" d="M590 410 C555 450, 465 462, 430 435 C408 420, 390 410, 370 405" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-orchestrator-to-ocr" class="arrow" d="M430 350 C470 305, 520 270, 590 262" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-ocr-to-flask" class="arrow" d="M800 262 C825 262, 850 262, 870 262" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-flask-to-langchain" class="arrow" d="M975 305 C975 320, 975 337, 975 350" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-langchain-to-rules" class="arrow" d="M1080 392 C1100 392, 1120 392, 1140 392" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-rules-to-dashboard" class="arrow" d="M1250 435 C1250 460, 1250 485, 1250 510" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-dashboard-to-apuser" class="arrow" d="M1250 595 C1250 618, 1250 640, 1250 660" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-apuser-approved-payload" class="arrow" d="M1140 700 C990 700, 780 700, 520 550" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-rules-confidence" class="arrow" d="M1140 370 C1070 330, 1030 310, 975 304" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-langchain-to-vector" class="arrow" d="M975 435 C975 460, 975 485, 975 510" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-vector-to-logs" class="arrow" d="M870 552 C850 552, 825 552, 800 552" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-orchestrator-patch-update" class="arrow" d="M520 410 C560 430, 590 430, 640 430" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-sap-rfc-transactional" class="arrow" d="M590 435 C550 470, 520 500, 520 552" data-kind="arrow" tabindex="0"/>
+          <path id="arrow-logs-to-sap" class="arrow" d="M590 552 C560 552, 540 552, 520 552" data-kind="arrow" tabindex="0"/>
+        </svg>
+        <div class="diagram-tooltip" id="diagramTooltip" role="tooltip"></div>
+      </div>
+
+      <div class="diagram-panel" aria-live="polite">
+        <div class="controls">
+          <button id="startFlow" type="button">Start Sequence</button>
+          <button id="nextFlow" type="button">Next Step</button>
+          <button id="resetFlow" type="button">Reset</button>
         </div>
-        <div class="diagram-panel" id="diagramPanel" aria-live="polite">
-            <div class="panel-toolbar">
-                <button id="startTour" class="panel-close" type="button">Start tour</button>
-                <button id="nextTour" class="panel-close" type="button">Next</button>
-                <button id="clearSelection" class="panel-close" type="button">Reset</button>
-            </div>
-            <h4>Interactive diagram details</h4>
-            <p id="tourStatus">Hover a component or arrow to view context. Click a highlighted step to auto-advance the guided flow.</p>
-        </div>
-        <p class="diagram-instruction">Tip: highlighted hotspots map to components and arrows from the architecture, including trigger paths, SAP reads, OCR output, confidence routing, HITL and write-back flows.</p>
+        <strong id="currentStep">Current Step: Not started</strong>
+        <p id="stepDetail">Hover or tap on a component/arrow to inspect details. Click highlighted element to move to the next step. Use keyboard arrows (→ or ↓) to advance.</p>
+      </div>
     </div>
 
-    <!-- ========== COMPONENT EXPLANATION (cards) ========== -->
-    <h2 style="margin: 2rem 0 1rem 0; font-weight: 600; font-size: 1.8rem;">🔍 component deep dive</h2>
-    <div class="two-col">
-        <div class="col">
-            <h3>📦 AI application platform (Azure VM)</h3>
-            <ul style="line-height: 1.7; padding-left: 1.2rem;">
-                <li><strong>Orchestrator</strong> – agentic workflow manager; initiates context building, invokes SAP reads, routes to exception handlers, retries, and coordinates write-back.</li>
-                <li><strong>Flask API</strong> – central northbound interface; receives triggers from SAP, serves React dashboard, and calls internal components.</li>
-                <li><strong>LangChain / LangGraph</strong> – orchestrates reasoning, classification (exception type), and agentic decisions. Maintains state.</li>
-                <li><strong>Mistral OCR service</strong> – extracts structured JSON (headers, lines, PO references) from invoice PDF/image.</li>
-                <li><strong>Math / rules engine</strong> – deterministic price/quantity tolerance checks, UoM normalisation, bank prioritisation (no LLM for calculations).</li>
-            </ul>
-            <h3 style="margin-top: 2rem;">🗃️ AI data stores (audit only)</h3>
-            <ul style="line-height: 1.7; padding-left: 1.2rem;">
-                <li><strong>PostgreSQL</strong> – stores job snapshots, audit logs (before/after states), HITL queue, and metrics.</li>
-                <li><strong>Pinecone (vector DB)</strong> – holds embeddings of contexts for semantic similarity & future retraining.</li>
-            </ul>
-        </div>
-        <div class="col">
-            <h3>🔌 integration layer</h3>
-            <ul style="line-height: 1.7; padding-left: 1.2rem;">
-                <li><strong>SAP event / polling trigger</strong> – detects invoice exception in Process Director Cockpit; pushes (or polls) invoice number + exception code.</li>
-                <li><strong>SAP RFC / BAPI</strong> – all read/write operations via RFC or OData (read‑only for fetches; update restricted to specific fields like PO assignment).</li>
-            </ul>
-            <h3 style="margin-top: 2rem;">🏢 SAP S/4HANA (system of record)</h3>
-            <ul style="line-height: 1.7; padding-left: 1.2rem;">
-                <li><strong>Process Director Cockpit</strong> – manages invoice parking, exceptions, and workflows.</li>
-                <li><strong>Invoice management, PO, GRN, vendor master</strong> – data sources for context (invoice metadata, PO lines, GRN quantities, bank accounts).</li>
-            </ul>
-            <h3 style="margin-top: 2rem;">👥 human‑in‑the‑loop & monitoring</h3>
-            <ul style="line-height: 1.7; padding-left: 1.2rem;">
-                <li><strong>React dashboard</strong> – visualises HITL queue, KPIs, audit logs; allows AP user to review/edit AI decisions.</li>
-                <li><strong>AP user</strong> – approves or corrects low‑confidence cases; edits are written back via orchestrator.</li>
-            </ul>
-        </div>
-    </div>
+    <h2>🔍 Component Deep Dive</h2>
+    <ul>
+      <li><strong>Orchestrator:</strong> Central process manager that receives trigger events, fetches SAP context, coordinates OCR/LLM/rules decisions, and controls write-back routing.</li>
+      <li><strong>Mistral OCR Service:</strong> Extracts structured text from invoice PDF/image inputs.</li>
+      <li><strong>Flask API:</strong> Normalization and API gateway layer for OCR payloads and downstream AI inference requests.</li>
+      <li><strong>LangChain / Graph:</strong> Multi-step reasoning and exception classification workflow.</li>
+      <li><strong>Math / Rules Engine:</strong> Deterministic validations for confidence thresholding and business constraints.</li>
+      <li><strong>React Dashboard + AP User:</strong> Human-in-the-loop review for low-confidence or conflicting recommendations.</li>
+      <li><strong>SAP RFC / BAPI + SAP S/4HANA:</strong> Controlled read/write integration and transactional update in system of record.</li>
+    </ul>
 
-    <hr>
+    <h2>🧭 Step-by-Step Data Flow</h2>
+    <div class="flow-step"><strong>Step 1:</strong> Trigger & Context Build Initiation (SAP Event/Polling Trigger → Orchestrator).</div>
+    <div class="flow-step"><strong>Step 2:</strong> SAP Context Fetch (Orchestrator ↔ SAP RFC/BAPI for PO/GRN/Vendor and invoice metadata).</div>
+    <div class="flow-step"><strong>Step 3:</strong> OCR & Data Extraction (Invoice PDF/Image → Mistral OCR → Flask API).</div>
+    <div class="flow-step"><strong>Step 4:</strong> AI Classification and Rules (Flask → LangChain/Graph → Math/Rules Engine).</div>
+    <div class="flow-step"><strong>Step 5:</strong> Confidence Routing (high-confidence auto-path, low-confidence to dashboard/AP user).</div>
+    <div class="flow-step"><strong>Step 6:</strong> Human-in-the-loop approval and corrected payload return.</div>
+    <div class="flow-step"><strong>Step 7:</strong> Write-back PATCH/Update fields and transactional SAP update.</div>
+    <div class="flow-step"><strong>Step 8:</strong> Logging, decisions, and embeddings persistence.</div>
 
-    <!-- ========== DETAILED DATA FLOW ========== -->
-    <h2 style="font-size: 1.8rem;">🔄 step‑by‑step data flow</h2>
-    <p style="margin-bottom: 1.5rem; color: #2d3748;">based on integration document v1.0 (section 5). each step is numbered and mapped to the diagram.</p>
-
-    <div class="flow-step">
-        <h4><span class="step-number">1</span> Trigger & context build initiation</h4>
-        <p><strong>SAP → Integration → Orchestrator:</strong> an invoice in Process Director Cockpit enters exception (e.g. balance not zero). SAP event bus (or poll) sends <code>{event, documentNumber, exceptionCode, companyCode}</code> to the orchestrator webhook. Orchestrator creates a job record in PostgreSQL (status=INITIATED).</p>
-    </div>
-
-    <div class="flow-step">
-        <h4><span class="step-number">2</span> Data fetch from SAP (read operations)</h4>
-        <p><strong>Orchestrator → SAP RFC/BAPI:</strong> parallel or sequential RFC reads (read‑only). fetched data includes:</p>
-        <ul>
-            <li>Invoice metadata & status (simulation mode, error detection, 3‑way match hints).</li>
-            <li>Invoice image / OCR payload (if not already stored).</li>
-            <li>Purchase order details (PO items, prices, quantities).</li>
-            <li>Goods receipt (GRN) documents.</li>
-            <li>Vendor master & banking data (bank accounts, currencies).</li>
-        </ul>
-        <p>If invoice image is needed, it is forwarded to Mistral OCR (local service).</p>
-    </div>
-
-    <div class="flow-step">
-        <h4><span class="step-number">3</span> Context assembly</h4>
-        <p><strong>Flask API + LangGraph:</strong> all fetched data + OCR output are merged into a unified JSON context object. This snapshot is stored in PostgreSQL (transactional) and a vector embedding is upserted to Pinecone (via LangChain).</p>
-    </div>
-
-    <div class="flow-step">
-        <h4><span class="step-number">4</span> Exception classification</h4>
-        <p><strong>LangGraph agent:</strong> uses rule‑based logic + LLM scoring to classify the specific exception type (multi‑PO, price difference, partial GRN, multiple banks, or HITL). Output includes a confidence score (0‑1) and routed path.</p>
-    </div>
-
-    <div class="flow-step">
-        <h4><span class="step-number">5</span> Exception‑specific processing</h4>
-        <p><strong>AI internal (rules + ML):</strong> per exception, the engine performs specialised analysis:</p>
-        <ul>
-            <li><strong>Multi‑PO / balance not zero:</strong> NLP on OCR to identify all POs, validate via SAP, and prepare PATCH with corrected PO list.</li>
-            <li><strong>Price difference:</strong> compare invoice price vs PO price + tolerance; if exceeded, prepare to trigger MM_PD_B workflow.</li>
-            <li><strong>Partial GRN:</strong> fuzzy matching on quantities / dispatch note to select correct GRN; prepare removal of excess GRNs.</li>
-            <li><strong>Multiple banks:</strong> match invoice currency to vendor bank accounts, flag ambiguity.</li>
-        </ul>
-        <p>All resolution data is held in the context object.</p>
-    </div>
-
-    <div class="flow-step">
-        <h4><span class="step-number">6a</span> Write‑back to SAP & workflow initiation</h4>
-        <p><strong>Orchestrator → SAP RFC (transactional):</strong> if confidence ≥ threshold (e.g. 0.8), AI sends corrections (e.g. PATCH to assign POs, update bank selection) or triggers a workflow (MM_PD_B). For updates, RFCs are used with job ID in headers for traceability. SAP remains system of record; AI never posts directly.</p>
-        <p>If confidence is low (or conflict), step 6b is invoked: HITL.</p>
-    </div>
-
-    <div class="flow-step">
-        <h4><span class="step-number">6b</span> Human‑in‑the‑loop</h4>
-        <p><strong>AI → React Dashboard → AP User:</strong> low‑confidence cases are inserted into HITL queue (PostgreSQL). Dashboard displays context; user approves/edits and submits. Approved payload is sent back to orchestrator, then written to SAP. Outcome is logged for retraining.</p>
-    </div>
-
-    <div class="flow-step">
-        <h4><span class="step-number">7</span> Audit, logging & monitoring</h4>
-        <p><strong>Every step → PostgreSQL + Dashboard:</strong> all API requests/responses, AI decisions, scores, and snapshots are stored in <code>audit_logs</code>. React dashboard shows real‑time KPIs (throughput, resolution time, exception rates). Logs are also pushed to Azure Monitor for alerting.</p>
-    </div>
-
-    <!-- BUSINESS EXCEPTION SCENARIOS TABLE -->
-    <h2 style="margin: 2.5rem 0 1rem;">📌 in‑scope exception scenarios</h2>
+    <h2>📋 In-Scope Exception Scenarios</h2>
     <table>
-        <thead><tr><th>exception</th><th>AI solution (summary)</th><th>data flow reference</th></tr></thead>
-        <tbody>
-            <tr><td><strong>Multiple bank accounts (VMD)</strong></td><td>extract currency/region rules; prioritise; validate against VMD; escalate if ambiguous</td><td>step 2 (vendor fetch), step 5.5.4, step 6</td></tr>
-            <tr><td><strong>Multiple PO numbers on invoice</strong></td><td>NLP PO detection; validate with SAP; select open/ relevant POs; PATCH to assign</td><td>step 2 (PO fetch), step 5.5.1, step 6</td></tr>
-            <tr><td><strong>Price difference beyond tolerance</strong></td><td>deterministic calculation (math engine); compare tolerance; trigger MM_PD_B workflow</td><td>step 2 (PO/GRN), step 5.5.2, step 6</td></tr>
-            <tr><td><strong>GRN exists but invoice not related to all GRNs</strong></td><td>fuzzy matching (item, qty, dispatch); UoM normalisation; correct GR selection</td><td>step 2 (GRN), step 5.5.3, step 6</td></tr>
-        </tbody>
+      <thead><tr><th>Scenario</th><th>Description</th><th>Resolution Path</th></tr></thead>
+      <tbody>
+        <tr><td>PO Mismatch</td><td>Invoice line values diverge from PO tolerance.</td><td>Rules validation + optional AP review.</td></tr>
+        <tr><td>Missing GRN</td><td>Invoice posted but goods receipt not found.</td><td>Context enrichment + dashboard escalation.</td></tr>
+        <tr><td>Vendor/Bank Ambiguity</td><td>Multiple bank details or vendor inconsistencies.</td><td>Human-in-the-loop confirmation.</td></tr>
+        <tr><td>Low OCR Confidence</td><td>Unreadable scan or incomplete extraction.</td><td>Manual correction in dashboard then resubmit.</td></tr>
+      </tbody>
     </table>
+  </div>
 
-    <!-- KEY PRINCIPLES & COMPLIANCE -->
-    <div style="background: #eaf0fd; border-radius: 28px; padding: 1.5rem 2rem; margin-top: 2rem;">
-        <div style="display: flex; gap: 3rem; flex-wrap: wrap;">
-            <div><span style="font-weight:700;">🔐 security & compliance</span><br>OAuth 2.0 / client certs, TLS 1.3, SAP read‑only + field‑level write, GDPR/SOX audit trails, Azure disk encryption.</div>
-            <div><span style="font-weight:700;">⚙️ error handling</span><br>retry (3x exp. backoff), escalation to HITL, Azure Monitor alerts, SLA &lt;5 min response.</div>
-            <div><span style="font-weight:700;">🧾 auditability</span><br>every decision logged with timestamp, actor, before/after snapshots; stored 7 years.</div>
-        </div>
-    </div>
+  <script>
+    const details = {
+      "sap-trigger": { title: "SAP Event / Polling Trigger", desc: "Publishes invoice exception signal with invoice number and exception code.", step: "Step 1" },
+      "orchestrator": { title: "Orchestrator", desc: "Coordinates fetching context, OCR, AI, rules, routing and SAP write-back.", step: "Step 1-7" },
+      "sap-rfc-bapi": { title: "SAP RFC / BAPI", desc: "Read/write gateway for metadata fetch and controlled transactional updates.", step: "Step 2/7" },
+      "mistral-ocr-service": { title: "Mistral OCR Service", desc: "Converts invoice PDFs/images into structured OCR output.", step: "Step 3" },
+      "flask-api": { title: "Flask API", desc: "Normalizes OCR JSON and sends payload to LLM workflow.", step: "Step 3-4" },
+      "langchain-engine": { title: "LangChain / Graph", desc: "Performs reasoning and exception categorization.", step: "Step 4" },
+      "rules-engine": { title: "Math / Rules Engine", desc: "Applies thresholds and business constraints.", step: "Step 4-5" },
+      "react-dashboard": { title: "React Dashboard", desc: "Queues low-confidence exceptions for AP analyst review.", step: "Step 5-6" },
+      "ap-user": { title: "AP User", desc: "Approves or corrects data and returns approved payload.", step: "Step 6" },
+      "vector-db": { title: "Vector DB", desc: "Stores embeddings for learning/context retrieval.", step: "Step 8" },
+      "logs": { title: "Logs & Decisions", desc: "Audits decisions, confidence and human overrides.", step: "Step 8" },
+      "sap-s4hana": { title: "SAP S/4HANA", desc: "System of record where final transactional updates are committed.", step: "Step 7" },
 
-    <div class="footnote">
-        ⚡ <strong>design principle:</strong> SAP remains system of record — AI acts as co‑processor, never posts directly. All postings are either auto‑posting after AI preparation or human‑approved workflows.
-    </div>
-    <!-- tiny footer -->
-    <div style="text-align: right; margin-top: 2rem; color: #5f6f8f; font-size: 0.85rem;">integration document v1.0 (09‑02‑2026) · AI‑SAP PoC · image "Data Flow Agentic BCOE 2.png" displayed above</div>
-</div>
-<script>
-    const hotspotItems = [
-        { id: 'react-dashboard', kind: 'component', x: 1595, y: 45, w: 215, h: 62, name: 'React Dashboard', description: 'Visualises HITL queue, KPIs, and audit logs; AP users can review and edit AI decisions before submission.' },
-        { id: 'ap-user', kind: 'component', x: 1920, y: 45, w: 145, h: 62, name: 'AP User', description: 'Approves or corrects low-confidence cases, then sends approved payload back for SAP write-back.' },
-        { id: 'postgresql', kind: 'component', x: 1298, y: 155, w: 130, h: 90, name: 'PostgreSQL', description: 'Stores job snapshots, audit logs, HITL queue, system metrics, and before/after decision traces.' },
-        { id: 'pinecone', kind: 'component', x: 1278, y: 290, w: 180, h: 78, name: 'Vector DB / Pinecone', description: 'Holds semantic embeddings of context snapshots for similarity search and retraining support.' },
-        { id: 'orchestrator', kind: 'component', x: 22, y: 792, w: 188, h: 64, name: 'Orchestrator', description: 'Manages agentic workflows; initiates context building, invokes SAP reads, routes exceptions, retries, and coordinates write-back.' },
-        { id: 'mistral-ocr', kind: 'component', x: 705, y: 496, w: 210, h: 63, name: 'Mistral OCR Service', description: 'Extracts structured OCR JSON (headers, lines, PO references) from invoice PDF/image files.' },
-        { id: 'flask-api', kind: 'component', x: 1275, y: 514, w: 125, h: 64, name: 'Flask API', description: 'Northbound API surface that receives SAP triggers, serves dashboard data, and coordinates internal services.' },
-        { id: 'langgraph', kind: 'component', x: 1448, y: 665, w: 238, h: 70, name: 'LangChain / LangGraph', description: 'Performs exception classification and agentic reasoning with maintained workflow state and confidence scoring.' },
-        { id: 'rules-engine', kind: 'component', x: 1820, y: 660, w: 245, h: 66, name: 'Math / Rules Engine', description: 'Runs deterministic tolerance checks, UoM normalization, and bank prioritisation logic for compliant outcomes.' },
-        { id: 'sap-trigger', kind: 'component', x: 510, y: 1142, w: 250, h: 72, name: 'SAP Event / Polling Trigger', description: 'Detects exceptions in Process Director Cockpit and pushes invoice number + exception code into the integration flow.' },
-        { id: 'sap-rfc', kind: 'component', x: 1455, y: 1205, w: 173, h: 66, name: 'SAP RFC / BAPI', description: 'Executes RFC/OData read and restricted write operations for metadata retrieval and transactional updates.' },
-        { id: 'pd-cockpit', kind: 'component', x: 24, y: 1500, w: 240, h: 68, name: 'Process Director Cockpit', description: 'Primary invoice exception cockpit where parked invoices and workflow statuses are managed.' },
-        { id: 'invoice-management', kind: 'component', x: 1844, y: 1360, w: 210, h: 68, name: 'Invoice Management', description: 'Provides invoice metadata, status, and linked document context used for exception resolution.' },
-        { id: 'purchase-orders', kind: 'component', x: 1865, y: 1460, w: 185, h: 66, name: 'Purchase Orders', description: 'Source of PO line details, quantities, prices, and matching attributes for 2-way/3-way comparisons.' },
-        { id: 'goods-receipt', kind: 'component', x: 1870, y: 1572, w: 175, h: 66, name: 'Goods Receipt', description: 'Supplies GRN receipts and quantity movement details for partial GRN and mismatch checks.' },
-        { id: 'vendor-master', kind: 'component', x: 1836, y: 1690, w: 218, h: 66, name: 'Vendor Master Data', description: 'Provides bank account and currency records used for multiple-bank disambiguation logic.' },
-        { id: 'flow-logs-decisions', kind: 'flow', x: 400, y: 464, w: 220, h: 34, label: 'Logs & Decisions', from: 'Orchestrator and agents', to: 'PostgreSQL', step: 'Step 10: Audit logging', data: 'Audit logs, confidence scores, before/after snapshots', description: 'All decisions, API calls, and outcomes are persisted for traceability, KPI views, and compliance.', path: 'M 220 810 C 420 520, 620 500, 780 490' },
-        { id: 'flow-ocr-json', kind: 'flow', x: 970, y: 522, w: 250, h: 30, label: 'Structured OCR JSON', from: 'Mistral OCR Service', to: 'Orchestrator', step: 'Step 3', data: 'Structured header + line-item JSON', description: 'OCR output is normalized and merged with SAP context into a single transactional JSON snapshot.', path: 'M 830 560 C 690 640, 520 700, 210 820' },
-        { id: 'flow-embeddings', kind: 'flow', x: 1558, y: 477, w: 130, h: 28, label: 'Embeddings', from: 'LangChain / LangGraph', to: 'Vector DB / Pinecone', step: 'Step 7', data: 'Vector embeddings', description: 'Semantic vectors of each context snapshot are upserted for similarity retrieval and retraining support.', path: 'M 1570 690 C 1540 560, 1490 470, 1410 350' },
-        { id: 'flow-confidence', kind: 'flow', x: 710, y: 749, w: 270, h: 28, label: 'Confidence >= Threshold', from: 'LangChain / LangGraph', to: 'Math / Rules Engine and SAP write path', step: 'Step 7', data: 'Confidence score + route', description: 'High-confidence classifications continue to deterministic checks and automated correction/write-back preparation.', path: 'M 1680 700 C 1730 700, 1780 700, 1820 700' },
-        { id: 'flow-approved-payload', kind: 'flow', x: 1228, y: 800, w: 200, h: 28, label: 'Approved Payload', from: 'AP User via React Dashboard', to: 'Orchestrator', step: 'Step 8/11', data: 'Human-reviewed correction payload', description: 'Low-confidence or conflicting cases are reviewed by AP users, and approved edits are returned for SAP write-back.', path: 'M 1650 100 C 1380 260, 940 500, 215 820' },
-        { id: 'flow-fetch-meta', kind: 'flow', x: 935, y: 814, w: 250, h: 28, label: 'Fetch Invoice Metadata', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 4', data: 'Invoice metadata JSON, status, simulation hints', description: 'Orchestrator invokes read-only RFC/OData calls to gather invoice metadata and related context.', path: 'M 205 830 C 620 850, 1020 950, 1450 1220' },
-        { id: 'flow-invoice-image', kind: 'flow', x: 905, y: 866, w: 190, h: 30, label: 'Invoice PDF/Image', from: 'Orchestrator', to: 'Mistral OCR Service', step: 'Step 2', data: 'Binary PDF/image', description: 'If OCR output is missing, invoice images are passed to the OCR service for document extraction.', path: 'M 210 820 C 420 780, 560 690, 705 560' },
-        { id: 'flow-invoice-no', kind: 'flow', x: 432, y: 910, w: 350, h: 30, label: 'Invoice No + Exception Code', from: 'SAP Event / Polling Trigger', to: 'Orchestrator webhook', step: 'Step 1', data: '{event, documentNumber, exceptionCode, companyCode}', description: 'SAP sends invoice-identifying event data to the orchestrator, which creates an initiated job record.', path: 'M 520 1150 C 430 1050, 350 940, 210 830' },
-        { id: 'flow-transactional-update', kind: 'flow', x: 560, y: 935, w: 270, h: 30, label: 'Transactional Update', from: 'SAP RFC / BAPI', to: 'SAP S/4HANA records', step: 'Step 9', data: 'Committed correction transaction', description: 'Validated update requests are committed in SAP, preserving SAP as system of record.', path: 'M 1540 1270 C 1690 1370, 1800 1470, 1880 1570' },
-        { id: 'flow-patch-update', kind: 'flow', x: 902, y: 965, w: 280, h: 30, label: 'PATCH / Update Fields', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 8', data: 'Field-level update payloads', description: 'For eligible cases, orchestrator sends restricted field updates (e.g., PO assignment, bank selection) through RFCs.', path: 'M 215 835 C 720 900, 1140 1040, 1450 1220' },
-        { id: 'flow-fetch-po-grn-vendor', kind: 'flow', x: 538, y: 1009, w: 250, h: 34, label: 'Fetch PO / GRN / Vendor', from: 'Orchestrator via SAP RFC / BAPI', to: 'PO + GRN + Vendor sources', step: 'Step 4', data: 'PO lines, GRN docs, vendor & bank records', description: 'The integration layer collects purchase, receipt, and vendor facts to build a complete resolution context.', path: 'M 1545 1240 C 1680 1360, 1800 1600, 1890 1700' },
-        { id: 'flow-invoice-enters', kind: 'flow', x: 470, y: 1520, w: 290, h: 30, label: 'Invoice Enters Exception', from: 'Process Director Cockpit', to: 'SAP Event / Polling Trigger', step: 'Step 1', data: 'Exception event metadata', description: 'When an invoice enters exception, the cockpit emits (or exposes for polling) the event that starts AI processing.', path: 'M 260 1515 C 340 1450, 430 1320, 520 1210' }
+      "arrow-sap-event-to-orchestrator": { title: "Invoice No + Exception Code", desc: "Trigger payload to orchestrator.", step: "Step 1" },
+      "arrow-orchestrator-to-sap-rfc": { title: "Fetch PO/GRN/Vendor", desc: "Orchestrator requests context.", step: "Step 2" },
+      "arrow-sap-to-orchestrator": { title: "Return Invoice Metadata", desc: "SAP returns enriched context.", step: "Step 2" },
+      "arrow-orchestrator-to-ocr": { title: "Invoice PDF/Image", desc: "Document sent for OCR extraction.", step: "Step 3" },
+      "arrow-ocr-to-flask": { title: "Structured OCR JSON", desc: "OCR output forwarded to API layer.", step: "Step 3" },
+      "arrow-flask-to-langchain": { title: "Normalized Payload", desc: "Flask sends normalized payload to AI graph.", step: "Step 4" },
+      "arrow-langchain-to-rules": { title: "Classification + Fields", desc: "Predictions delivered to deterministic rules.", step: "Step 4" },
+      "arrow-rules-confidence": { title: "Confidence Check", desc: "High confidence routes to auto update path.", step: "Step 5" },
+      "arrow-rules-to-dashboard": { title: "Exception Routing", desc: "Low confidence routed to dashboard.", step: "Step 5" },
+      "arrow-dashboard-to-apuser": { title: "HITL Review", desc: "Analyst reviews and corrects exceptions.", step: "Step 6" },
+      "arrow-apuser-approved-payload": { title: "Approved Payload", desc: "Human-verified corrections returned for write-back.", step: "Step 6-7" },
+      "arrow-orchestrator-patch-update": { title: "PATCH / Update Fields", desc: "Orchestrator sends update-ready payload to SAP RFC/BAPI.", step: "Step 7" },
+      "arrow-sap-rfc-transactional": { title: "Transactional Update", desc: "SAP commit/update to S/4HANA.", step: "Step 7" },
+      "arrow-langchain-to-vector": { title: "Embeddings", desc: "Model outputs persisted for retrieval.", step: "Step 8" },
+      "arrow-vector-to-logs": { title: "Logging Stream", desc: "Store vector/log artifacts and decisions.", step: "Step 8" },
+      "arrow-logs-to-sap": { title: "Decision Trace", desc: "Operational trace tied to SAP lifecycle.", step: "Step 8" }
+    };
+
+    const sequence = [
+      "arrow-sap-event-to-orchestrator",
+      "orchestrator",
+      "arrow-orchestrator-to-sap-rfc",
+      "sap-rfc-bapi",
+      "arrow-sap-to-orchestrator",
+      "arrow-orchestrator-to-ocr",
+      "mistral-ocr-service",
+      "arrow-ocr-to-flask",
+      "flask-api",
+      "arrow-flask-to-langchain",
+      "langchain-engine",
+      "arrow-langchain-to-rules",
+      "rules-engine",
+      "arrow-rules-confidence",
+      "arrow-rules-to-dashboard",
+      "react-dashboard",
+      "arrow-dashboard-to-apuser",
+      "ap-user",
+      "arrow-apuser-approved-payload",
+      "arrow-orchestrator-patch-update",
+      "arrow-sap-rfc-transactional",
+      "sap-s4hana",
+      "arrow-langchain-to-vector",
+      "vector-db",
+      "arrow-vector-to-logs",
+      "logs",
+      "arrow-logs-to-sap"
     ];
 
-    const tourSequence = [
-        'flow-invoice-enters','sap-trigger','flow-invoice-no','orchestrator','flow-invoice-image','mistral-ocr','flow-ocr-json','flow-fetch-meta','flow-fetch-po-grn-vendor','sap-rfc','flask-api','langgraph','rules-engine','flow-embeddings','flow-confidence','flow-patch-update','flow-approved-payload','flow-transactional-update','invoice-management','purchase-orders','goods-receipt','vendor-master','flow-logs-decisions','postgresql','pinecone','react-dashboard','ap-user'
-    ];
+    const tooltip = document.getElementById("diagramTooltip");
+    const currentStep = document.getElementById("currentStep");
+    const stepDetail = document.getElementById("stepDetail");
+    const svg = document.getElementById("architectureSvg");
+    let sequenceIndex = -1;
+    let activeEl = null;
 
-    const layer = document.getElementById('hotspotLayer');
-    const tooltip = document.getElementById('diagramTooltip');
-    const panel = document.getElementById('diagramPanel');
-    const interactiveDiagram = document.getElementById('interactiveDiagram');
-    const tourStatus = document.getElementById('tourStatus');
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-    let activeId = null;
-    let currentTourIndex = -1;
-    let tourStarted = false;
-
-    const arrowLayer = document.createElementNS(SVG_NS, 'g');
-    const hitLayer = document.createElementNS(SVG_NS, 'g');
-    layer.appendChild(arrowLayer);
-    layer.appendChild(hitLayer);
-
-    const itemById = new Map(hotspotItems.map((item) => [item.id, item]));
-    const shapeById = new Map();
-
-    function panelHtml(item) {
-        if (item.kind === 'component') {
-            return `<h4>${item.name}</h4><p>${item.description}</p>`;
-        }
-        return `<h4>${item.label}</h4><p><strong>From:</strong> ${item.from} <strong>→ To:</strong> ${item.to}</p><p><strong>${item.step}</strong> · <strong>Data:</strong> ${item.data}</p><p>${item.description}</p>`;
+    function showTooltip(evt, id) {
+      const meta = details[id];
+      if (!meta) return;
+      tooltip.innerHTML = `<strong>${meta.title}</strong><br>${meta.step}<br>${meta.desc}`;
+      tooltip.style.display = "block";
+      positionTooltip(evt);
+      currentStep.textContent = `Current Step: ${meta.step} - ${meta.title}`;
+      stepDetail.textContent = meta.desc;
     }
 
-    function tooltipHtml(item) {
-        if (item.kind === 'component') {
-            return `<strong>${item.name}</strong><br>${item.description}`;
-        }
-        return `<strong>${item.label}</strong><br>${item.from} → ${item.to}<br>${item.step}<br>${item.data}`;
+    function positionTooltip(evt) {
+      const wrap = document.getElementById("interactiveDiagram").getBoundingClientRect();
+      const x = Math.min(Math.max(evt.clientX - wrap.left + 12, 8), wrap.width - tooltip.offsetWidth - 8);
+      const y = Math.min(Math.max(evt.clientY - wrap.top + 12, 8), wrap.height - tooltip.offsetHeight - 8);
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
     }
 
-    function placeTooltip(event) {
-        const bounds = layer.getBoundingClientRect();
-        const maxX = bounds.width - tooltip.offsetWidth - 8;
-        const maxY = bounds.height - tooltip.offsetHeight - 8;
-        const x = Math.min(Math.max(event.clientX - bounds.left + 14, 8), Math.max(maxX, 8));
-        const y = Math.min(Math.max(event.clientY - bounds.top + 14, 8), Math.max(maxY, 8));
-        tooltip.style.left = `${x}px`;
-        tooltip.style.top = `${y}px`;
+    function activateElement(id, evt = null) {
+      if (activeEl) activeEl.classList.remove("active");
+      const el = document.getElementById(id);
+      if (!el) return;
+      activeEl = el;
+      el.classList.add("active");
+      const rect = el.getBoundingClientRect();
+      const fakeEvt = evt || { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 };
+      showTooltip(fakeEvt, id);
     }
 
-    function hideTooltip() {
-        tooltip.style.display = 'none';
-        tooltip.setAttribute('aria-hidden', 'true');
+    function clearActive() {
+      if (activeEl) activeEl.classList.remove("active");
+      activeEl = null;
+      tooltip.style.display = "none";
+      currentStep.textContent = "Current Step: Not started";
+      stepDetail.textContent = "Hover or tap on a component/arrow to inspect details. Click highlighted element to move to the next step. Use keyboard arrows (→ or ↓) to advance.";
     }
 
-    function updateDetails(item, event) {
-        panel.innerHTML = `<div class="panel-toolbar">
-                <button id="startTour" class="panel-close" type="button">Start tour</button>
-                <button id="nextTour" class="panel-close" type="button">Next</button>
-                <button id="clearSelection" class="panel-close" type="button">Reset</button>
-            </div>${panelHtml(item)}<p id="tourStatus">${tourStarted ? `Tour step ${currentTourIndex + 1} of ${tourSequence.length}.` : 'Hover a component or arrow to view context. Click a highlighted step to auto-advance the guided flow.'}</p>`;
-        bindToolbar();
-        tooltip.innerHTML = tooltipHtml(item);
-        if (event) {
-            tooltip.style.display = 'block';
-            tooltip.setAttribute('aria-hidden', 'false');
-            placeTooltip(event);
-        }
+    function advanceSequence() {
+      sequenceIndex = (sequenceIndex + 1) % sequence.length;
+      activateElement(sequence[sequenceIndex]);
     }
 
-    function resetPanel() {
-        panel.innerHTML = `<div class="panel-toolbar">
-                <button id="startTour" class="panel-close" type="button">Start tour</button>
-                <button id="nextTour" class="panel-close" type="button">Next</button>
-                <button id="clearSelection" class="panel-close" type="button">Reset</button>
-            </div><h4>Interactive diagram details</h4><p id="tourStatus">Hover a component or arrow to view context. Click a highlighted step to auto-advance the guided flow.</p>`;
-        bindToolbar();
-    }
-
-    function clearClasses() {
-        shapeById.forEach((shape) => shape.classList.remove('active', 'sequence-current', 'sequence-next'));
-        arrowLayer.querySelectorAll('.arrow-path').forEach((path) => path.classList.remove('arrow-hover'));
-    }
-
-    function showItem(itemId, event) {
-        const item = itemById.get(itemId);
-        const shape = shapeById.get(itemId);
-        if (!item || !shape) return;
-        clearClasses();
-        shape.classList.add('active');
-        activeId = itemId;
-        if (item.kind === 'flow') {
-            const path = arrowLayer.querySelector(`[data-arrow-for="${item.id}"]`);
-            if (path) path.classList.add('arrow-hover');
-        }
-        updateDetails(item, event);
-    }
-
-    function markTourTargets() {
-        clearClasses();
-        if (currentTourIndex >= 0 && currentTourIndex < tourSequence.length) {
-            const currentShape = shapeById.get(tourSequence[currentTourIndex]);
-            if (currentShape) currentShape.classList.add('sequence-current', 'active');
-        }
-        if (currentTourIndex + 1 < tourSequence.length) {
-            const nextShape = shapeById.get(tourSequence[currentTourIndex + 1]);
-            if (nextShape) nextShape.classList.add('sequence-next');
-        }
-    }
-
-    function stepTo(index) {
-        if (index < 0 || index >= tourSequence.length) return;
-        tourStarted = true;
-        currentTourIndex = index;
-        const id = tourSequence[index];
-        showItem(id);
-        markTourTargets();
-        const statusNode = document.getElementById('tourStatus');
-        if (statusNode) {
-            statusNode.textContent = `Tour step ${index + 1} of ${tourSequence.length}: ${itemById.get(id).kind === 'component' ? itemById.get(id).name : itemById.get(id).label}`;
-        }
-    }
-
-    function nextTourStep() {
-        if (!tourStarted) {
-            stepTo(0);
-            return;
-        }
-        if (currentTourIndex + 1 < tourSequence.length) {
-            stepTo(currentTourIndex + 1);
-        } else {
-            const statusNode = document.getElementById('tourStatus');
-            if (statusNode) statusNode.textContent = 'Tour complete. Press Reset to restart or click any sequence item to continue exploring.';
-        }
-    }
-
-    function resetTour() {
-        tourStarted = false;
-        currentTourIndex = -1;
-        activeId = null;
-        clearClasses();
-        hideTooltip();
-        resetPanel();
-    }
-
-    function bindToolbar() {
-        const startBtn = document.getElementById('startTour');
-        const nextBtn = document.getElementById('nextTour');
-        const clearBtn = document.getElementById('clearSelection');
-        if (startBtn) startBtn.onclick = () => stepTo(0);
-        if (nextBtn) nextBtn.onclick = () => nextTourStep();
-        if (clearBtn) clearBtn.onclick = () => resetTour();
-    }
-
-    hotspotItems.forEach((item) => {
-        if (item.kind === 'flow' && item.path) {
-            const path = document.createElementNS(SVG_NS, 'path');
-            path.setAttribute('d', item.path);
-            path.setAttribute('class', 'arrow-path');
-            path.dataset.arrowFor = item.id;
-            arrowLayer.appendChild(path);
-        }
-
-        const shape = document.createElementNS(SVG_NS, 'rect');
-        shape.classList.add('hotspot', item.kind);
-        if (tourSequence.includes(item.id)) shape.classList.add('in-sequence');
-        shape.dataset.kind = item.kind;
-        shape.dataset.id = item.id;
-        shape.setAttribute('x', item.x);
-        shape.setAttribute('y', item.y);
-        shape.setAttribute('width', item.w);
-        shape.setAttribute('height', item.h);
-        shape.setAttribute('rx', item.kind === 'flow' ? 16 : 8);
-        shape.setAttribute('ry', item.kind === 'flow' ? 16 : 8);
-        shape.setAttribute('tabindex', '0');
-        shape.setAttribute('role', 'button');
-        shape.setAttribute('aria-label', item.kind === 'component' ? item.name : item.label);
-
-        shape.addEventListener('mouseenter', (event) => {
-            showItem(item.id, event);
-            if (item.kind === 'flow') {
-                const path = arrowLayer.querySelector(`[data-arrow-for="${item.id}"]`);
-                if (path) path.classList.add('arrow-hover');
-            }
-        });
-
-        shape.addEventListener('mousemove', placeTooltip);
-
-        shape.addEventListener('mouseleave', () => {
-            hideTooltip();
-            if (!tourStarted) shape.classList.remove('active');
-            if (item.kind === 'flow') {
-                const path = arrowLayer.querySelector(`[data-arrow-for="${item.id}"]`);
-                if (path && (!tourStarted || tourSequence[currentTourIndex] !== item.id)) path.classList.remove('arrow-hover');
-            }
-            if (tourStarted) markTourTargets();
-        });
-
-        shape.addEventListener('focus', () => showItem(item.id));
-        shape.addEventListener('blur', () => { if (!tourStarted) shape.classList.remove('active'); });
-
-        shape.addEventListener('click', (event) => {
-            updateDetails(item, event);
-            if (!tourSequence.includes(item.id)) {
-                activeId = item.id;
-                return;
-            }
-            const idx = tourSequence.indexOf(item.id);
-            if (idx < tourSequence.length - 1) {
-                stepTo(idx + 1);
-            } else {
-                stepTo(idx);
-                const statusNode = document.getElementById('tourStatus');
-                if (statusNode) statusNode.textContent = 'Last sequence step reached. Press Reset to run the flow again.';
-            }
-        });
-
-        shape.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                shape.click();
-            }
-        });
-
-        hitLayer.appendChild(shape);
-        shapeById.set(item.id, shape);
+    Object.keys(details).forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      ["mouseover", "focus", "touchstart"].forEach((eventName) => {
+        el.addEventListener(eventName, (evt) => {
+          if (eventName === "touchstart") evt.preventDefault();
+          activateElement(id, evt);
+        }, { passive: false });
+      });
+      el.addEventListener("mousemove", (evt) => positionTooltip(evt));
+      el.addEventListener("mouseout", () => { if (activeEl !== el) tooltip.style.display = "none"; });
+      el.addEventListener("click", () => advanceSequence());
+      el.addEventListener("keydown", (evt) => {
+        if (evt.key === "Enter" || evt.key === " ") { evt.preventDefault(); advanceSequence(); }
+      });
     });
 
-    interactiveDiagram.addEventListener('mouseleave', hideTooltip);
+    document.getElementById("startFlow").addEventListener("click", () => { sequenceIndex = -1; advanceSequence(); });
+    document.getElementById("nextFlow").addEventListener("click", advanceSequence);
+    document.getElementById("resetFlow").addEventListener("click", () => { sequenceIndex = -1; clearActive(); });
 
-    document.addEventListener('click', (event) => {
-        if (!interactiveDiagram.contains(event.target) && !panel.contains(event.target)) {
-            resetTour();
-        }
+    document.addEventListener("keydown", (evt) => {
+      if (evt.key === "ArrowRight" || evt.key === "ArrowDown") advanceSequence();
+      if (evt.key === "Escape") { sequenceIndex = -1; clearActive(); }
     });
 
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' || event.key.toLowerCase() === 'r') {
-            resetTour();
-        }
-        if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'n') {
-            nextTourStep();
-        }
+    svg.addEventListener("click", (evt) => {
+      if (evt.target === svg) {
+        sequenceIndex = -1;
+        clearActive();
+      }
     });
-
-    bindToolbar();
-</script>
+  </script>
 </body>
 </html>
