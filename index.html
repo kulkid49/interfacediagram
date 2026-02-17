@@ -296,10 +296,67 @@
             margin-bottom: 0.35rem;
             color: #153157;
         }
+
         .panel-toolbar {
-            display: none;
+            display: flex;
             justify-content: flex-end;
+            gap: 0.45rem;
             margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .panel-close:hover,
+        .panel-close:focus-visible {
+            background: #1e3a5f;
+            color: #fff;
+            outline: none;
+        }
+        .hotspot.in-sequence {
+            stroke-dasharray: 6 4;
+        }
+        .hotspot.sequence-current {
+            fill: rgba(11, 89, 176, 0.22);
+            stroke: #0b59b0;
+            stroke-width: 6;
+            filter: drop-shadow(0 0 5px rgba(11, 89, 176, 0.8));
+        }
+        .hotspot.sequence-next {
+            fill: rgba(20, 150, 50, 0.15);
+            stroke: #149632;
+            stroke-width: 5;
+            animation: pulse-next 1.2s infinite;
+        }
+        .hotspot.flow {
+            stroke: rgba(145, 30, 30, 0.2);
+        }
+        .hotspot.flow:hover,
+        .hotspot.flow:focus-visible,
+        .hotspot.flow.active {
+            stroke: #dd1f2b;
+            stroke-width: 6;
+            fill: rgba(221, 31, 43, 0.12);
+        }
+        .arrow-path {
+            fill: none;
+            stroke: rgba(30, 58, 95, 0.35);
+            stroke-width: 5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vector-effect: non-scaling-stroke;
+            pointer-events: none;
+            transition: stroke 0.2s ease, stroke-width 0.2s ease;
+        }
+        .arrow-path.arrow-hover {
+            stroke: #dd1f2b;
+            stroke-width: 7;
+            stroke-dasharray: 10 8;
+            animation: arrow-dash 0.7s linear infinite;
+        }
+        @keyframes arrow-dash {
+            to { stroke-dashoffset: -18; }
+        }
+        @keyframes pulse-next {
+            0%,100% { filter: drop-shadow(0 0 2px rgba(20,150,50,0.6)); }
+            50% { filter: drop-shadow(0 0 9px rgba(20,150,50,0.95)); }
         }
         .panel-close {
             border: 1px solid #1e3a5f;
@@ -327,9 +384,6 @@
             .diagram-tooltip {
                 display: none !important;
             }
-            .panel-toolbar {
-                display: flex;
-            }
         }
     </style>
 </head>
@@ -349,12 +403,16 @@
         <div class="interactive-diagram" id="interactiveDiagram" aria-label="Interactive architecture diagram">
             <img src="Data Flow Agentic BCOE 2.png" alt="AI-SAP Invoice Exception Handling integration architecture diagram">
             <svg class="hotspot-layer" id="hotspotLayer" viewBox="0 0 2088 1755" preserveAspectRatio="none" aria-hidden="true"></svg>
-            <div class="diagram-tooltip" id="diagramTooltip"></div>
+            <div class="diagram-tooltip" id="diagramTooltip" role="tooltip" aria-hidden="true"></div>
         </div>
         <div class="diagram-panel" id="diagramPanel" aria-live="polite">
-            <div class="panel-toolbar"><button id="clearSelection" class="panel-close" type="button">Clear selection</button></div>
+            <div class="panel-toolbar">
+                <button id="startTour" class="panel-close" type="button">Start tour</button>
+                <button id="nextTour" class="panel-close" type="button">Next</button>
+                <button id="clearSelection" class="panel-close" type="button">Reset</button>
+            </div>
             <h4>Interactive diagram details</h4>
-            <p>Hover a component or arrow to view context. On mobile, tap a highlighted region.</p>
+            <p id="tourStatus">Hover a component or arrow to view context. Click a highlighted step to auto-advance the guided flow.</p>
         </div>
         <p class="diagram-instruction">Tip: highlighted hotspots map to components and arrows from the architecture, including trigger paths, SAP reads, OCR output, confidence routing, HITL and write-back flows.</p>
     </div>
@@ -491,41 +549,53 @@
         { id: 'ap-user', kind: 'component', x: 1920, y: 45, w: 145, h: 62, name: 'AP User', description: 'Approves or corrects low-confidence cases, then sends approved payload back for SAP write-back.' },
         { id: 'postgresql', kind: 'component', x: 1298, y: 155, w: 130, h: 90, name: 'PostgreSQL', description: 'Stores job snapshots, audit logs, HITL queue, system metrics, and before/after decision traces.' },
         { id: 'pinecone', kind: 'component', x: 1278, y: 290, w: 180, h: 78, name: 'Vector DB / Pinecone', description: 'Holds semantic embeddings of context snapshots for similarity search and retraining support.' },
-
         { id: 'orchestrator', kind: 'component', x: 22, y: 792, w: 188, h: 64, name: 'Orchestrator', description: 'Manages agentic workflows; initiates context building, invokes SAP reads, routes exceptions, retries, and coordinates write-back.' },
         { id: 'mistral-ocr', kind: 'component', x: 705, y: 496, w: 210, h: 63, name: 'Mistral OCR Service', description: 'Extracts structured OCR JSON (headers, lines, PO references) from invoice PDF/image files.' },
         { id: 'flask-api', kind: 'component', x: 1275, y: 514, w: 125, h: 64, name: 'Flask API', description: 'Northbound API surface that receives SAP triggers, serves dashboard data, and coordinates internal services.' },
         { id: 'langgraph', kind: 'component', x: 1448, y: 665, w: 238, h: 70, name: 'LangChain / LangGraph', description: 'Performs exception classification and agentic reasoning with maintained workflow state and confidence scoring.' },
         { id: 'rules-engine', kind: 'component', x: 1820, y: 660, w: 245, h: 66, name: 'Math / Rules Engine', description: 'Runs deterministic tolerance checks, UoM normalization, and bank prioritisation logic for compliant outcomes.' },
-
         { id: 'sap-trigger', kind: 'component', x: 510, y: 1142, w: 250, h: 72, name: 'SAP Event / Polling Trigger', description: 'Detects exceptions in Process Director Cockpit and pushes invoice number + exception code into the integration flow.' },
         { id: 'sap-rfc', kind: 'component', x: 1455, y: 1205, w: 173, h: 66, name: 'SAP RFC / BAPI', description: 'Executes RFC/OData read and restricted write operations for metadata retrieval and transactional updates.' },
-
         { id: 'pd-cockpit', kind: 'component', x: 24, y: 1500, w: 240, h: 68, name: 'Process Director Cockpit', description: 'Primary invoice exception cockpit where parked invoices and workflow statuses are managed.' },
         { id: 'invoice-management', kind: 'component', x: 1844, y: 1360, w: 210, h: 68, name: 'Invoice Management', description: 'Provides invoice metadata, status, and linked document context used for exception resolution.' },
         { id: 'purchase-orders', kind: 'component', x: 1865, y: 1460, w: 185, h: 66, name: 'Purchase Orders', description: 'Source of PO line details, quantities, prices, and matching attributes for 2-way/3-way comparisons.' },
         { id: 'goods-receipt', kind: 'component', x: 1870, y: 1572, w: 175, h: 66, name: 'Goods Receipt', description: 'Supplies GRN receipts and quantity movement details for partial GRN and mismatch checks.' },
         { id: 'vendor-master', kind: 'component', x: 1836, y: 1690, w: 218, h: 66, name: 'Vendor Master Data', description: 'Provides bank account and currency records used for multiple-bank disambiguation logic.' },
-
-        { id: 'flow-logs-decisions', kind: 'flow', x: 400, y: 464, w: 220, h: 34, label: 'Logs & Decisions', from: 'Orchestrator and agents', to: 'PostgreSQL', step: 'Step 7: Audit logging', data: 'Audit logs, confidence scores, before/after snapshots', description: 'All decisions, API calls, and outcomes are persisted for traceability, KPI views, and compliance.' },
-        { id: 'flow-ocr-json', kind: 'flow', x: 970, y: 522, w: 250, h: 30, label: 'Structured OCR JSON', from: 'Mistral OCR Service', to: 'Flask API / context builder', step: 'Step 3: Context assembly', data: 'Structured header + line-item JSON', description: 'OCR output is normalized and merged with SAP context into a single transactional JSON snapshot.' },
-        { id: 'flow-embeddings', kind: 'flow', x: 1558, y: 477, w: 130, h: 28, label: 'Embeddings', from: 'LangChain / LangGraph', to: 'Vector DB / Pinecone', step: 'Step 3', data: 'Vector embeddings', description: 'Semantic vectors of each context snapshot are upserted for similarity retrieval and retraining support.' },
-        { id: 'flow-confidence-route', kind: 'flow', x: 1660, y: 333, w: 260, h: 32, label: 'Confidence & Threshold', from: 'LangChain / LangGraph', to: 'AP User / automation route', step: 'Steps 4-6', data: 'Confidence gate and routing metadata', description: 'Confidence scoring determines whether a case routes to automatic update logic or human review.' },
-        { id: 'flow-confidence', kind: 'flow', x: 710, y: 749, w: 270, h: 28, label: 'Confidence >= Threshold', from: 'LangChain / LangGraph', to: 'Math / Rules Engine and SAP write path', step: 'Steps 4-6', data: 'Confidence score + route', description: 'High-confidence classifications continue to deterministic checks and automated correction/write-back preparation.' },
-        { id: 'flow-approved-payload', kind: 'flow', x: 1228, y: 800, w: 200, h: 28, label: 'Approved Payload', from: 'AP User via React Dashboard', to: 'Orchestrator', step: 'Step 6b: HITL', data: 'Human-reviewed correction payload', description: 'Low-confidence or conflicting cases are reviewed by AP users, and approved edits are returned for SAP write-back.' },
-        { id: 'flow-fetch-meta', kind: 'flow', x: 935, y: 814, w: 250, h: 28, label: 'Fetch Invoice Metadata', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 2: Data fetch', data: 'Invoice metadata JSON, status, simulation hints', description: 'Orchestrator invokes read-only RFC/OData calls to gather invoice metadata and related context.' },
-        { id: 'flow-invoice-image', kind: 'flow', x: 905, y: 866, w: 190, h: 30, label: 'Invoice PDF/Image', from: 'SAP fetch context', to: 'Mistral OCR Service', step: 'Step 2', data: 'Binary PDF/image', description: 'If OCR output is missing, invoice images are passed to the OCR service for document extraction.' },
-        { id: 'flow-invoice-no', kind: 'flow', x: 432, y: 910, w: 350, h: 30, label: 'Invoice No + Exception Code', from: 'SAP Event / Polling Trigger', to: 'Orchestrator webhook', step: 'Step 1', data: '{event, documentNumber, exceptionCode, companyCode}', description: 'SAP sends invoice-identifying event data to the orchestrator, which creates an initiated job record.' },
-        { id: 'flow-transactional-update', kind: 'flow', x: 560, y: 935, w: 270, h: 30, label: 'Transactional Update', from: 'SAP RFC / BAPI', to: 'SAP S/4HANA records', step: 'Step 6', data: 'Committed correction transaction', description: 'Validated update requests are committed in SAP, preserving SAP as system of record.' },
-        { id: 'flow-patch-update', kind: 'flow', x: 902, y: 965, w: 280, h: 30, label: 'PATCH / Update Fields', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 6', data: 'Field-level update payloads', description: 'For eligible cases, orchestrator sends restricted field updates (e.g., PO assignment, bank selection) through RFCs.' },
-        { id: 'flow-fetch-po-grn-vendor', kind: 'flow', x: 538, y: 1009, w: 250, h: 34, label: 'Fetch PO / GRN / Vendor', from: 'SAP RFC / BAPI', to: 'PO + GRN + Vendor sources', step: 'Step 2', data: 'PO lines, GRN docs, vendor & bank records', description: 'The integration layer collects purchase, receipt, and vendor facts to build a complete resolution context.' },
-        { id: 'flow-invoice-enters', kind: 'flow', x: 470, y: 1520, w: 290, h: 30, label: 'Invoice Enters Exception', from: 'Process Director Cockpit', to: 'SAP Event / Polling Trigger', step: 'Step 1: Trigger & Context Build Initiation', data: 'Exception event metadata', description: 'When an invoice enters exception, the cockpit emits (or exposes for polling) the event that starts AI processing.' }
+        { id: 'flow-logs-decisions', kind: 'flow', x: 400, y: 464, w: 220, h: 34, label: 'Logs & Decisions', from: 'Orchestrator and agents', to: 'PostgreSQL', step: 'Step 10: Audit logging', data: 'Audit logs, confidence scores, before/after snapshots', description: 'All decisions, API calls, and outcomes are persisted for traceability, KPI views, and compliance.', path: 'M 220 810 C 420 520, 620 500, 780 490' },
+        { id: 'flow-ocr-json', kind: 'flow', x: 970, y: 522, w: 250, h: 30, label: 'Structured OCR JSON', from: 'Mistral OCR Service', to: 'Orchestrator', step: 'Step 3', data: 'Structured header + line-item JSON', description: 'OCR output is normalized and merged with SAP context into a single transactional JSON snapshot.', path: 'M 830 560 C 690 640, 520 700, 210 820' },
+        { id: 'flow-embeddings', kind: 'flow', x: 1558, y: 477, w: 130, h: 28, label: 'Embeddings', from: 'LangChain / LangGraph', to: 'Vector DB / Pinecone', step: 'Step 7', data: 'Vector embeddings', description: 'Semantic vectors of each context snapshot are upserted for similarity retrieval and retraining support.', path: 'M 1570 690 C 1540 560, 1490 470, 1410 350' },
+        { id: 'flow-confidence', kind: 'flow', x: 710, y: 749, w: 270, h: 28, label: 'Confidence >= Threshold', from: 'LangChain / LangGraph', to: 'Math / Rules Engine and SAP write path', step: 'Step 7', data: 'Confidence score + route', description: 'High-confidence classifications continue to deterministic checks and automated correction/write-back preparation.', path: 'M 1680 700 C 1730 700, 1780 700, 1820 700' },
+        { id: 'flow-approved-payload', kind: 'flow', x: 1228, y: 800, w: 200, h: 28, label: 'Approved Payload', from: 'AP User via React Dashboard', to: 'Orchestrator', step: 'Step 8/11', data: 'Human-reviewed correction payload', description: 'Low-confidence or conflicting cases are reviewed by AP users, and approved edits are returned for SAP write-back.', path: 'M 1650 100 C 1380 260, 940 500, 215 820' },
+        { id: 'flow-fetch-meta', kind: 'flow', x: 935, y: 814, w: 250, h: 28, label: 'Fetch Invoice Metadata', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 4', data: 'Invoice metadata JSON, status, simulation hints', description: 'Orchestrator invokes read-only RFC/OData calls to gather invoice metadata and related context.', path: 'M 205 830 C 620 850, 1020 950, 1450 1220' },
+        { id: 'flow-invoice-image', kind: 'flow', x: 905, y: 866, w: 190, h: 30, label: 'Invoice PDF/Image', from: 'Orchestrator', to: 'Mistral OCR Service', step: 'Step 2', data: 'Binary PDF/image', description: 'If OCR output is missing, invoice images are passed to the OCR service for document extraction.', path: 'M 210 820 C 420 780, 560 690, 705 560' },
+        { id: 'flow-invoice-no', kind: 'flow', x: 432, y: 910, w: 350, h: 30, label: 'Invoice No + Exception Code', from: 'SAP Event / Polling Trigger', to: 'Orchestrator webhook', step: 'Step 1', data: '{event, documentNumber, exceptionCode, companyCode}', description: 'SAP sends invoice-identifying event data to the orchestrator, which creates an initiated job record.', path: 'M 520 1150 C 430 1050, 350 940, 210 830' },
+        { id: 'flow-transactional-update', kind: 'flow', x: 560, y: 935, w: 270, h: 30, label: 'Transactional Update', from: 'SAP RFC / BAPI', to: 'SAP S/4HANA records', step: 'Step 9', data: 'Committed correction transaction', description: 'Validated update requests are committed in SAP, preserving SAP as system of record.', path: 'M 1540 1270 C 1690 1370, 1800 1470, 1880 1570' },
+        { id: 'flow-patch-update', kind: 'flow', x: 902, y: 965, w: 280, h: 30, label: 'PATCH / Update Fields', from: 'Orchestrator', to: 'SAP RFC / BAPI', step: 'Step 8', data: 'Field-level update payloads', description: 'For eligible cases, orchestrator sends restricted field updates (e.g., PO assignment, bank selection) through RFCs.', path: 'M 215 835 C 720 900, 1140 1040, 1450 1220' },
+        { id: 'flow-fetch-po-grn-vendor', kind: 'flow', x: 538, y: 1009, w: 250, h: 34, label: 'Fetch PO / GRN / Vendor', from: 'Orchestrator via SAP RFC / BAPI', to: 'PO + GRN + Vendor sources', step: 'Step 4', data: 'PO lines, GRN docs, vendor & bank records', description: 'The integration layer collects purchase, receipt, and vendor facts to build a complete resolution context.', path: 'M 1545 1240 C 1680 1360, 1800 1600, 1890 1700' },
+        { id: 'flow-invoice-enters', kind: 'flow', x: 470, y: 1520, w: 290, h: 30, label: 'Invoice Enters Exception', from: 'Process Director Cockpit', to: 'SAP Event / Polling Trigger', step: 'Step 1', data: 'Exception event metadata', description: 'When an invoice enters exception, the cockpit emits (or exposes for polling) the event that starts AI processing.', path: 'M 260 1515 C 340 1450, 430 1320, 520 1210' }
     ];
+
+    const tourSequence = [
+        'flow-invoice-enters','sap-trigger','flow-invoice-no','orchestrator','flow-invoice-image','mistral-ocr','flow-ocr-json','flow-fetch-meta','flow-fetch-po-grn-vendor','sap-rfc','flask-api','langgraph','rules-engine','flow-embeddings','flow-confidence','flow-patch-update','flow-approved-payload','flow-transactional-update','invoice-management','purchase-orders','goods-receipt','vendor-master','flow-logs-decisions','postgresql','pinecone','react-dashboard','ap-user'
+    ];
+
     const layer = document.getElementById('hotspotLayer');
     const tooltip = document.getElementById('diagramTooltip');
     const panel = document.getElementById('diagramPanel');
     const interactiveDiagram = document.getElementById('interactiveDiagram');
-    const defaultPanelHtml = '<div class="panel-toolbar"><button id="clearSelection" class="panel-close" type="button">Clear selection</button></div><h4>Interactive diagram details</h4><p>Hover a component or arrow to view context. On mobile, tap a highlighted region.</p>';
+    const tourStatus = document.getElementById('tourStatus');
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    let activeId = null;
+    let currentTourIndex = -1;
+    let tourStarted = false;
+
+    const arrowLayer = document.createElementNS(SVG_NS, 'g');
+    const hitLayer = document.createElementNS(SVG_NS, 'g');
+    layer.appendChild(arrowLayer);
+    layer.appendChild(hitLayer);
+
+    const itemById = new Map(hotspotItems.map((item) => [item.id, item]));
+    const shapeById = new Map();
 
     function panelHtml(item) {
         if (item.kind === 'component') {
@@ -551,41 +621,124 @@
         tooltip.style.top = `${y}px`;
     }
 
-    const SVG_NS = 'http://www.w3.org/2000/svg';
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+        tooltip.setAttribute('aria-hidden', 'true');
+    }
 
     function updateDetails(item, event) {
-        panel.innerHTML = panelHtml(item);
+        panel.innerHTML = `<div class="panel-toolbar">
+                <button id="startTour" class="panel-close" type="button">Start tour</button>
+                <button id="nextTour" class="panel-close" type="button">Next</button>
+                <button id="clearSelection" class="panel-close" type="button">Reset</button>
+            </div>${panelHtml(item)}<p id="tourStatus">${tourStarted ? `Tour step ${currentTourIndex + 1} of ${tourSequence.length}.` : 'Hover a component or arrow to view context. Click a highlighted step to auto-advance the guided flow.'}</p>`;
+        bindToolbar();
         tooltip.innerHTML = tooltipHtml(item);
         if (event) {
             tooltip.style.display = 'block';
+            tooltip.setAttribute('aria-hidden', 'false');
             placeTooltip(event);
         }
     }
 
     function resetPanel() {
-        panel.innerHTML = defaultPanelHtml;
-        const renewedClearBtn = document.getElementById('clearSelection');
-        if (renewedClearBtn) {
-            renewedClearBtn.onclick = () => {
-                tooltip.style.display = 'none';
-                document.querySelectorAll('.hotspot.active').forEach((el) => el.classList.remove('active'));
-                resetPanel();
-            };
+        panel.innerHTML = `<div class="panel-toolbar">
+                <button id="startTour" class="panel-close" type="button">Start tour</button>
+                <button id="nextTour" class="panel-close" type="button">Next</button>
+                <button id="clearSelection" class="panel-close" type="button">Reset</button>
+            </div><h4>Interactive diagram details</h4><p id="tourStatus">Hover a component or arrow to view context. Click a highlighted step to auto-advance the guided flow.</p>`;
+        bindToolbar();
+    }
+
+    function clearClasses() {
+        shapeById.forEach((shape) => shape.classList.remove('active', 'sequence-current', 'sequence-next'));
+        arrowLayer.querySelectorAll('.arrow-path').forEach((path) => path.classList.remove('arrow-hover'));
+    }
+
+    function showItem(itemId, event) {
+        const item = itemById.get(itemId);
+        const shape = shapeById.get(itemId);
+        if (!item || !shape) return;
+        clearClasses();
+        shape.classList.add('active');
+        activeId = itemId;
+        if (item.kind === 'flow') {
+            const path = arrowLayer.querySelector(`[data-arrow-for="${item.id}"]`);
+            if (path) path.classList.add('arrow-hover');
+        }
+        updateDetails(item, event);
+    }
+
+    function markTourTargets() {
+        clearClasses();
+        if (currentTourIndex >= 0 && currentTourIndex < tourSequence.length) {
+            const currentShape = shapeById.get(tourSequence[currentTourIndex]);
+            if (currentShape) currentShape.classList.add('sequence-current', 'active');
+        }
+        if (currentTourIndex + 1 < tourSequence.length) {
+            const nextShape = shapeById.get(tourSequence[currentTourIndex + 1]);
+            if (nextShape) nextShape.classList.add('sequence-next');
         }
     }
 
-    function addActive(el) {
-        el.classList.add('active');
+    function stepTo(index) {
+        if (index < 0 || index >= tourSequence.length) return;
+        tourStarted = true;
+        currentTourIndex = index;
+        const id = tourSequence[index];
+        showItem(id);
+        markTourTargets();
+        const statusNode = document.getElementById('tourStatus');
+        if (statusNode) {
+            statusNode.textContent = `Tour step ${index + 1} of ${tourSequence.length}: ${itemById.get(id).kind === 'component' ? itemById.get(id).name : itemById.get(id).label}`;
+        }
     }
 
-    function removeActive(el) {
-        el.classList.remove('active');
+    function nextTourStep() {
+        if (!tourStarted) {
+            stepTo(0);
+            return;
+        }
+        if (currentTourIndex + 1 < tourSequence.length) {
+            stepTo(currentTourIndex + 1);
+        } else {
+            const statusNode = document.getElementById('tourStatus');
+            if (statusNode) statusNode.textContent = 'Tour complete. Press Reset to restart or click any sequence item to continue exploring.';
+        }
+    }
+
+    function resetTour() {
+        tourStarted = false;
+        currentTourIndex = -1;
+        activeId = null;
+        clearClasses();
+        hideTooltip();
+        resetPanel();
+    }
+
+    function bindToolbar() {
+        const startBtn = document.getElementById('startTour');
+        const nextBtn = document.getElementById('nextTour');
+        const clearBtn = document.getElementById('clearSelection');
+        if (startBtn) startBtn.onclick = () => stepTo(0);
+        if (nextBtn) nextBtn.onclick = () => nextTourStep();
+        if (clearBtn) clearBtn.onclick = () => resetTour();
     }
 
     hotspotItems.forEach((item) => {
+        if (item.kind === 'flow' && item.path) {
+            const path = document.createElementNS(SVG_NS, 'path');
+            path.setAttribute('d', item.path);
+            path.setAttribute('class', 'arrow-path');
+            path.dataset.arrowFor = item.id;
+            arrowLayer.appendChild(path);
+        }
+
         const shape = document.createElementNS(SVG_NS, 'rect');
-        shape.classList.add('hotspot');
+        shape.classList.add('hotspot', item.kind);
+        if (tourSequence.includes(item.id)) shape.classList.add('in-sequence');
         shape.dataset.kind = item.kind;
+        shape.dataset.id = item.id;
         shape.setAttribute('x', item.x);
         shape.setAttribute('y', item.y);
         shape.setAttribute('width', item.w);
@@ -597,52 +750,73 @@
         shape.setAttribute('aria-label', item.kind === 'component' ? item.name : item.label);
 
         shape.addEventListener('mouseenter', (event) => {
-            updateDetails(item, event);
-            addActive(shape);
+            showItem(item.id, event);
+            if (item.kind === 'flow') {
+                const path = arrowLayer.querySelector(`[data-arrow-for="${item.id}"]`);
+                if (path) path.classList.add('arrow-hover');
+            }
         });
 
         shape.addEventListener('mousemove', placeTooltip);
 
         shape.addEventListener('mouseleave', () => {
-            tooltip.style.display = 'none';
-            removeActive(shape);
+            hideTooltip();
+            if (!tourStarted) shape.classList.remove('active');
+            if (item.kind === 'flow') {
+                const path = arrowLayer.querySelector(`[data-arrow-for="${item.id}"]`);
+                if (path && (!tourStarted || tourSequence[currentTourIndex] !== item.id)) path.classList.remove('arrow-hover');
+            }
+            if (tourStarted) markTourTargets();
         });
 
-        shape.addEventListener('focus', () => {
-            panel.innerHTML = panelHtml(item);
-            addActive(shape);
-        });
-
-        shape.addEventListener('blur', () => {
-            removeActive(shape);
-        });
+        shape.addEventListener('focus', () => showItem(item.id));
+        shape.addEventListener('blur', () => { if (!tourStarted) shape.classList.remove('active'); });
 
         shape.addEventListener('click', (event) => {
-            document.querySelectorAll('.hotspot.active').forEach((el) => {
-                if (el !== shape) {
-                    el.classList.remove('active');
-                }
-            });
             updateDetails(item, event);
-            shape.classList.add('active');
+            if (!tourSequence.includes(item.id)) {
+                activeId = item.id;
+                return;
+            }
+            const idx = tourSequence.indexOf(item.id);
+            if (idx < tourSequence.length - 1) {
+                stepTo(idx + 1);
+            } else {
+                stepTo(idx);
+                const statusNode = document.getElementById('tourStatus');
+                if (statusNode) statusNode.textContent = 'Last sequence step reached. Press Reset to run the flow again.';
+            }
         });
 
-        layer.appendChild(shape);
+        shape.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                shape.click();
+            }
+        });
+
+        hitLayer.appendChild(shape);
+        shapeById.set(item.id, shape);
     });
 
-    interactiveDiagram.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-    });
+    interactiveDiagram.addEventListener('mouseleave', hideTooltip);
 
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            tooltip.style.display = 'none';
-            document.querySelectorAll('.hotspot.active').forEach((el) => el.classList.remove('active'));
-            resetPanel();
+    document.addEventListener('click', (event) => {
+        if (!interactiveDiagram.contains(event.target) && !panel.contains(event.target)) {
+            resetTour();
         }
     });
 
-    resetPanel();
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' || event.key.toLowerCase() === 'r') {
+            resetTour();
+        }
+        if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'n') {
+            nextTourStep();
+        }
+    });
+
+    bindToolbar();
 </script>
 </body>
 </html>
